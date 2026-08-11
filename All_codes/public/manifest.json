@@ -1,0 +1,21 @@
+{
+  "name": "AeroMind — Physical AI Travel Concierge",
+  "short_name": "AeroMind",
+  "description": "Multimodal Gemini-powered travel concierge scanning boarding passes, predicting flight disruptions, and auto-rebooking trips.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

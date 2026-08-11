@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm/
+.yarn/
+
+# Build & Production Output
+dist/
+build/
+.next/
+out/
+
+# Local Environment Files (Secrets & Keys)
+.env
+.env.local
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & Editor Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosql
+*.sln.docstates
+
+# TypeScript & Cache
+*.tsbuildinfo
+next-env.d.ts
+.cache/
+.vite/
