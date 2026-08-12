@@ -3,6 +3,7 @@
 import { HomeNavbar } from '@/components/HomeNavbar';
 import { AirplaneWindowHero } from '@/components/AirplaneWindowHero';
 import { OverviewSection } from '@/components/OverviewSection';
+import { MediaShowcaseSection } from '@/components/MediaShowcaseSection';
 import { FeaturesShowcase } from '@/components/FeaturesShowcase';
 import { AboutUsSection } from '@/components/AboutUsSection';
 import { TechStackSection } from '@/components/TechStackSection';
@@ -14,6 +15,7 @@ export default function Home() {
       <HomeNavbar />
       <AirplaneWindowHero />
       <OverviewSection />
+      <MediaShowcaseSection />
       <AboutUsSection />
       <FeaturesShowcase />
       <TechStackSection />

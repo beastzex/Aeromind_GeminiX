@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
   Eye,
@@ -13,83 +14,69 @@ import {
   Zap,
   GitBranch,
   BellRing,
-  ArrowUpRight,
+  ArrowRight,
+  CheckCircle2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function FeaturesShowcase() {
-  const features = [
-    {
-      id: 1,
-      title: 'Multimodal AI Assistant',
-      desc: 'Sees, listens, understands, and responds using real-time vision, voice, and contextual airport awareness.',
-      icon: Eye,
-      tag: 'Core Intelligence',
-    },
-    {
-      id: 2,
-      title: 'Document & Screen Intelligence',
-      desc: 'Instantly parses boarding passes, flight itineraries, airport displays, and digital travel documents in under 1 second.',
-      icon: FileText,
-      tag: 'OCR & Vision',
-    },
-    {
-      id: 3,
-      title: 'Real-World Visual Understanding',
-      desc: 'Recognizes gate numbers, baggage carousels, departure boards, and airport signage directly through your camera feed.',
-      icon: Camera,
-      tag: 'Spatial Perception',
-    },
-    {
-      id: 4,
-      title: 'Natural Voice Interaction',
-      desc: 'Provides hands-free, conversational assistance with whisper alerts and real-time speech synthesis throughout the journey.',
-      icon: Mic,
-      tag: 'Hands-Free Voice',
-    },
-    {
-      id: 5,
-      title: 'Autonomous Travel Management',
-      desc: 'Detects flight disruptions and executes automated multi-leg actions like rebooking alternate flights, hotels, and rentals.',
-      icon: ShieldAlert,
-      tag: 'Auto-Rebooking',
-    },
-    {
-      id: 6,
-      title: 'Context-Aware Navigation',
-      desc: 'Uses live terminal location and trip context with 2D compass overlay to guide travelers directly to their departing gate.',
-      icon: Compass,
-      tag: 'Airport Compass',
-    },
-    {
-      id: 7,
-      title: 'Real-Time Trip Monitoring',
-      desc: 'Continuously tracks flight status, air traffic control delays, and live weather conditions to provide proactive guidance.',
-      icon: Activity,
-      tag: 'Live Monitoring',
-    },
-    {
-      id: 8,
-      title: 'Event-Driven Automation',
-      desc: 'Automatically reacts to travel plan changes in real time with zero or minimal user intervention required.',
-      icon: Zap,
-      tag: 'Event Pipeline',
-    },
-    {
-      id: 9,
-      title: 'Persistent Trip Context',
-      desc: 'Maintains stateful itinerary graphs across flights, hotels, and ground transit for continuous personalized assistance.',
-      icon: GitBranch,
-      tag: 'Digital Twin Graph',
-    },
-    {
-      id: 10,
-      title: 'Smart Notifications & Recommendations',
-      desc: 'Delivers timely, actionable whisper alerts and gate change recommendations based on real-time physical events.',
-      icon: BellRing,
-      tag: 'Whisper Alerts',
-    },
+  const [activeCategory, setActiveCategory] = useState<'vision' | 'rebooking' | 'voice' | 'twin'>('vision');
+
+  const categories = [
+    { id: 'vision', label: 'Multimodal Vision', icon: Eye },
+    { id: 'rebooking', label: 'Disruption Guard', icon: ShieldAlert },
+    { id: 'voice', label: 'Voice & Navigation', icon: Mic },
+    { id: 'twin', label: 'Digital Twin Graph', icon: GitBranch },
   ];
+
+  const featureDetails = {
+    vision: {
+      title: 'Multimodal Vision & Document Perception',
+      subtitle: 'Extracts flight itineraries, PNR codes, and gate numbers in < 800ms directly from physical camera feeds or uploaded boarding passes.',
+      image: '/images/Simple Planner Pages Minimal Design.jpg',
+      points: [
+        'Instant OCR extraction from physical paper or digital boarding passes',
+        'Automatic validation of flight numbers (e.g. AI302) and gate assignments',
+        'Direct integration with Gemini 1.5 Pro multimodal vision models',
+      ],
+      tag: 'Core Vision Intelligence',
+    },
+    rebooking: {
+      title: 'Autonomous Multi-Leg Disruption Rebooking',
+      subtitle: 'Predicts flight delays using OpenSky ADS-B telemetry and automatically reschedules connecting hotels and rental cars with 1 tap.',
+      image: '/images/@luxurymedia1 _ Abstract Liquid High Quality Pack, 900+ _ Beacons.jpg',
+      points: [
+        'Real-time ATC congestion & weather disruption risk calculation',
+        'Consolidated rebooking proposals for flights, Hyatt hotels, and Hertz car rentals',
+        'Immutable audit log tracking all execution events',
+      ],
+      tag: 'Zero-Friction Protection',
+    },
+    voice: {
+      title: 'Conversational Voice & Wayfinding Compass',
+      subtitle: 'Hands-free voice concierge delivering quiet whisper alerts and live gate guidance directly inside airport terminals.',
+      image: '/images/🛩️.jpg',
+      points: [
+        'Hands-free speech processing and contextual question answering',
+        'Live terminal walking ETAs and directional guidance',
+        'Whisper alerts for gate updates before PA system announcements',
+      ],
+      tag: 'Hands-Free Assistance',
+    },
+    twin: {
+      title: 'Digital Twin Itinerary State Graph',
+      subtitle: 'Maintains a dependency graph across flights, hotel check-ins, and car pickups to propagate delays automatically.',
+      image: '/images/The Planet by Pixels.jpg',
+      points: [
+        'Graph representation of travel leg dependencies',
+        'Automated propagation of schedule shifts downstream',
+        'Real-time sync between OpenSky flight vectors and local client store',
+      ],
+      tag: 'Stateful Architecture',
+    },
+  };
+
+  const activeData = featureDetails[activeCategory];
 
   return (
     <section id="features" className="relative py-28 bg-white dark:bg-black text-black dark:text-white transition-colors duration-300">
@@ -98,68 +85,102 @@ export function FeaturesShowcase() {
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/15 text-black dark:text-white text-xs font-manrope font-semibold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Complete Feature Suite</span>
+            <span>Operational Capabilities</span>
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight font-manrope text-black dark:text-white">
-            10 Autonomous Capabilities Built For Frictionless Travel
+          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight font-manrope text-black dark:text-white">
+            Designed for Precision. Built for Frictionless Travel.
           </h2>
 
           <p className="text-neutral-600 dark:text-neutral-300 text-base sm:text-lg font-manrope">
-            Every feature is fully implemented and operational inside our live interactive Work App environment.
+            Select a capability domain below to inspect how AeroMind monitors, understands, and executes travel actions autonomously.
           </p>
         </div>
 
-        {/* 10 Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
+        {/* Category Pill Switcher */}
+        <div className="flex flex-wrap items-center justify-center gap-3 max-w-3xl mx-auto p-1.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 backdrop-blur-md">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeCategory === cat.id;
             return (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 25 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.08 }}
-                className="group relative p-7 rounded-2xl bg-neutral-50 dark:bg-neutral-950 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white transition-all duration-300 hover:-translate-y-1.5 shadow-md flex flex-col justify-between"
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id as any)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-manrope font-semibold transition-all duration-300 ${
+                  isActive
+                    ? 'bg-black dark:bg-white text-white dark:text-black shadow-md scale-105'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10'
+                }`}
               >
-                <div className="space-y-4">
-                  {/* Top Badge & Icon */}
-                  <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Icon className="w-6 h-6" />
-                    </div>
-
-                    <span className="text-[11px] font-manrope font-semibold px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 border border-black/10 dark:border-white/10">
-                      {feature.tag}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-lg font-semibold font-manrope text-black dark:text-white">
-                    {feature.id}. {feature.title}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm font-manrope leading-relaxed">
-                    {feature.desc}
-                  </p>
-                </div>
-
-                {/* Bottom CTA link */}
-                <div className="pt-6 mt-6 border-t border-black/10 dark:border-white/10 flex items-center justify-between font-manrope">
-                  <span className="text-xs text-neutral-500 font-medium">Operational in App</span>
-                  <Link
-                    to="/work"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-black dark:text-white hover:underline transition-all"
-                  >
-                    <span>Test Feature</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </motion.div>
+                <Icon className="w-4 h-4" />
+                <span>{cat.label}</span>
+              </button>
             );
           })}
+        </div>
+
+        {/* Smooth Tab Showcase Box */}
+        <div className="max-w-5xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeCategory}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="p-8 sm:p-12 rounded-3xl bg-neutral-50 dark:bg-neutral-950 border border-black/10 dark:border-white/15 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
+            >
+              {/* Left Text Column */}
+              <div className="lg:col-span-7 space-y-6 text-left">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-neutral-800 dark:text-neutral-200 text-xs font-semibold font-manrope border border-black/10 dark:border-white/10">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                  {activeData.tag}
+                </span>
+
+                <h3 className="text-2xl sm:text-3xl font-bold font-manrope text-black dark:text-white leading-tight">
+                  {activeData.title}
+                </h3>
+
+                <p className="text-neutral-600 dark:text-neutral-300 text-sm sm:text-base font-manrope leading-relaxed">
+                  {activeData.subtitle}
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  {activeData.points.map((pt, idx) => (
+                    <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm font-manrope text-neutral-700 dark:text-neutral-200">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4">
+                  <Link
+                    to="/work"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-semibold font-manrope shadow-md hover:scale-105 transition-all"
+                  >
+                    <span>Launch Feature in App</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Image Showcase Column */}
+              <div className="lg:col-span-5 flex justify-center">
+                <div className="relative w-full h-64 sm:h-72 rounded-2xl overflow-hidden border border-black/10 dark:border-white/15 shadow-xl group">
+                  <img
+                    src={activeData.image}
+                    alt={activeData.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 p-3 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-white text-xs font-manrope font-medium">
+                    Fully Operational in AeroMind Work App
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </section>

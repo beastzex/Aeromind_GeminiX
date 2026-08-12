@@ -39,10 +39,14 @@ import { Link } from 'react-router-dom';
 
 type TabType = 'itinerary' | 'tracker' | 'pass' | 'disruption' | 'wayfinding' | 'tester';
 
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+
 export default function WorkPage() {
   const [legs, setLegs] = useState<Leg[]>([]);
   const [impactedLegIds, setImpactedLegIds] = useState<string[]>([]);
   const [proposal, setProposal] = useState<RebookingProposal | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('itinerary');
@@ -56,20 +60,26 @@ export default function WorkPage() {
   const [whisperAlertMsg, setWhisperAlertMsg] = useState<string | null>(null);
   const [activeFeatureTest, setActiveFeatureTest] = useState<string | null>(null);
 
-  const loadTripData = () => {
-    const fetchedLegs = TripStore.getLegs();
+  const loadTripData = (userEmail?: string | null) => {
+    const email = userEmail !== undefined ? userEmail : currentUser?.email;
+    const fetchedLegs = TripStore.getLegs(email);
     setLegs(fetchedLegs);
-    const activeProp = TripStore.getLatestProposal();
+    const activeProp = TripStore.getLatestProposal(email);
     setProposal(activeProp);
   };
 
   useEffect(() => {
-    loadTripData();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      loadTripData(user?.email);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSimulateDisruption = async () => {
     try {
-      const data = await simulateDisruptionApi();
+      const data = await simulateDisruptionApi(currentUser?.email);
 
       if (data.success) {
         setImpactedLegIds(data.impactedLegIds || ['leg_hotel_hyatt', 'leg_car_hertz']);
@@ -90,12 +100,12 @@ export default function WorkPage() {
   };
 
   const handleScanSuccess = (newLeg: Leg) => {
-    loadTripData();
+    loadTripData(currentUser?.email);
     setWhisperAlertMsg(`New boarding pass added: ${newLeg.title}. Digital-Twin itinerary graph updated.`);
   };
 
   const handleApproveRebookingSuccess = () => {
-    loadTripData();
+    loadTripData(currentUser?.email);
     setImpactedLegIds([]);
     setWhisperAlertMsg('Rebooking executed! Flight AI302 replaced with UA868. Hotel and Car shift completed.');
   };
@@ -212,21 +222,29 @@ export default function WorkPage() {
         <div className="p-6 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs uppercase tracking-widest font-semibold text-neutral-600 dark:text-neutral-300">
-                AeroMind Physical AI Travel Environment
+                {currentUser ? `Active Session: ${currentUser.email}` : 'Demo Workspace (Pre-loaded Itinerary)'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-semibold text-black dark:text-white tracking-tight">
-              SF Tech & AI Summit 2026
+              SF Tech &amp; AI Summit 2026
             </h1>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
-              Live Multimodal Background Telemetry Active · Flight AI302 (DEL ➔ SFO)
+              Live Multimodal Telemetry Active · Flight AI302 (DEL ➔ SFO)
             </p>
           </div>
 
           {/* Action Toolbar */}
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setIsScannerOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-black/10 dark:border-white/15 text-xs font-semibold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              title="Scan or add your own custom flight / boarding pass"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Scan My Pass</span>
+            </button>
             <button
               onClick={handleSimulateDisruption}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-semibold shadow-md hover:scale-105 transition-all"
@@ -350,11 +368,13 @@ export default function WorkPage() {
                   Stateful Digital-Twin Itinerary Graph
                 </h2>
                 <p className="text-xs text-neutral-500">
-                  Click any travel node (Flight ➔ Hotel ➔ Car) to inspect state dependencies.
+                  {legs.length > 0
+                    ? 'Click any travel node (Flight ➔ Hotel ➔ Car) to inspect state dependencies.'
+                    : 'Your active account is ready. Scan a boarding pass or add a flight to build your live graph.'}
                 </p>
               </div>
               <button
-                onClick={loadTripData}
+                onClick={() => loadTripData(currentUser?.email)}
                 className="flex items-center gap-1.5 text-xs font-medium text-black dark:text-white hover:underline"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -362,11 +382,34 @@ export default function WorkPage() {
               </button>
             </div>
 
-            <DigitalTwinGraph
-              legs={legs}
-              impactedLegIds={impactedLegIds}
-              onSelectLeg={() => setIsRebookingOpen(true)}
-            />
+            {legs.length === 0 ? (
+              <div className="p-10 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center mx-auto text-xl">
+                  <GitBranch className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold font-manrope text-black dark:text-white">
+                    No Active Trips Found
+                  </h3>
+                  <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                    Your production account ({currentUser?.email || 'Logged In User'}) currently has no active flights. Scan a boarding pass or add a flight to initialize your real-time itinerary graph.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsScannerOpen(true)}
+                  className="px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold text-xs shadow-md hover:scale-105 transition-all inline-flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Scan Your First Boarding Pass</span>
+                </button>
+              </div>
+            ) : (
+              <DigitalTwinGraph
+                legs={legs}
+                impactedLegIds={impactedLegIds}
+                onSelectLeg={() => setIsRebookingOpen(true)}
+              />
+            )}
           </section>
         )}
 
@@ -490,7 +533,7 @@ export default function WorkPage() {
       </button>
 
       {/* AI Chat Drawer */}
-      <AIChatDrawer isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} />
+      <AIChatDrawer isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} userEmail={currentUser?.email} />
 
       {/* Modals */}
       <ScannerModal

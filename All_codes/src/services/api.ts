@@ -4,8 +4,8 @@ import { mockProposal } from '@/lib/mockData';
 import { processAdvisorMessage } from '@/lib/groqClient';
 import { Leg } from '@/types';
 
-export async function simulateDisruptionApi() {
-  const legs = TripStore.getLegs();
+export async function simulateDisruptionApi(userEmail?: string | null) {
+  const legs = TripStore.getLegs(userEmail);
   const flightLeg = legs.find((l) => l.type === 'flight');
 
   if (!flightLeg) {
@@ -24,20 +24,20 @@ export async function simulateDisruptionApi() {
   TripStore.updateLeg(flightLeg.id, {
     disruptionScore: newScore,
     status: newScore >= 60 ? 'delayed' : 'onTime',
-  });
+  }, userEmail);
 
   let proposalCreated = false;
   let impactedLegIds: string[] = [];
 
   if (newScore >= 60) {
-    impactedLegIds = TripStore.findDownstreamImpactedLegs(flightLeg.id);
+    impactedLegIds = TripStore.findDownstreamImpactedLegs(flightLeg.id, userEmail);
 
     TripStore.createProposal({
       ...mockProposal,
       id: `prop_${Date.now()}`,
       status: 'pending',
       createdAt: Date.now(),
-    });
+    }, userEmail);
     proposalCreated = true;
   }
 
@@ -50,9 +50,14 @@ export async function simulateDisruptionApi() {
   };
 }
 
-export async function processRebookingApi(action: 'get' | 'approve', proposalId?: string, chosenOptionId?: string) {
+export async function processRebookingApi(
+  action: 'get' | 'approve',
+  proposalId?: string,
+  chosenOptionId?: string,
+  userEmail?: string | null
+) {
   if (action === 'get') {
-    const proposal = TripStore.getLatestProposal();
+    const proposal = TripStore.getLatestProposal(userEmail);
     return { proposal };
   }
 
@@ -61,12 +66,12 @@ export async function processRebookingApi(action: 'get' | 'approve', proposalId?
       throw new Error('proposalId and chosenOptionId are required for approval');
     }
 
-    const success = TripStore.approveProposal(proposalId, chosenOptionId);
+    const success = TripStore.approveProposal(proposalId, chosenOptionId, userEmail);
     if (!success) {
       throw new Error('Proposal not found or already executed');
     }
 
-    const updatedLegs = TripStore.getLegs();
+    const updatedLegs = TripStore.getLegs(userEmail);
     return {
       success: true,
       message: 'Rebooking approved and executed across flight, hotel, and car legs.',
@@ -77,7 +82,7 @@ export async function processRebookingApi(action: 'get' | 'approve', proposalId?
   throw new Error('Invalid action parameter');
 }
 
-export async function scanBoardingPassApi(fileName?: string) {
+export async function scanBoardingPassApi(fileName?: string, userEmail?: string | null) {
   const parsedLeg = {
     flightNo: 'AI302',
     title: 'Delhi (DEL) → San Francisco (SFO)',
@@ -92,7 +97,7 @@ export async function scanBoardingPassApi(fileName?: string) {
 
   const newLeg: Leg = TripStore.addLeg({
     id: `leg_scanned_${Date.now()}`,
-    tripId: 'trip_sfo_2026',
+    tripId: 'trip_user_active',
     type: 'flight',
     title: parsedLeg.title,
     flightNo: parsedLeg.flightNo,
@@ -110,7 +115,7 @@ export async function scanBoardingPassApi(fileName?: string) {
       carrier: parsedLeg.carrier,
       gate: parsedLeg.gate,
     },
-  });
+  }, userEmail);
 
   return {
     success: true,
@@ -119,6 +124,6 @@ export async function scanBoardingPassApi(fileName?: string) {
   };
 }
 
-export async function sendAdvisorChatApi(message: string) {
-  return await processAdvisorMessage(message);
+export async function sendAdvisorChatApi(message: string, userEmail?: string | null) {
+  return await processAdvisorMessage(message, userEmail);
 }
