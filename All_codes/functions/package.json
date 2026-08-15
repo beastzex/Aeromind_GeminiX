@@ -1,0 +1,27 @@
+{
+  "name": "functions",
+  "description": "AeroMind Cloud Functions — server-side proxy for Groq, OpenSky, and AviationStack so secret keys never reach the browser",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0",
+    "groq-sdk": "^0.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.17.0"
+  },
+  "private": true
+}

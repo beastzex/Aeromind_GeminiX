@@ -4,14 +4,22 @@ import { Header } from '@/components/Header';
 import { TripJournal } from '@/components/TripJournal';
 import { TripStore } from '@/lib/tripStore';
 import { useState, useEffect } from 'react';
-import { TripEvent } from '@/types';
+import { TripEvent, Trip } from '@/types';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function JournalPage() {
   const [accessibilityMode, setAccessibilityMode] = useState(false);
   const [events, setEvents] = useState<TripEvent[]>([]);
+  const [trip, setTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
-    setEvents(TripStore.getEvents());
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const who = user ? { uid: user.uid, email: user.email } : null;
+      setEvents(await TripStore.getEvents(who));
+      setTrip(await TripStore.getTrip(who));
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -22,7 +30,7 @@ export default function JournalPage() {
         onToggleAccessibility={() => setAccessibilityMode(!accessibilityMode)}
       />
       <main>
-        <TripJournal events={events} tripTitle="SF Tech & AI Summit 2026" />
+        <TripJournal events={events} tripTitle={trip?.title || 'Loading trip…'} />
       </main>
     </div>
   );

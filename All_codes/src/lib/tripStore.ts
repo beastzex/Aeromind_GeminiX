@@ -1,33 +1,51 @@
 import { Trip, Leg, TripEvent, RebookingProposal } from '@/types';
 import { mockTrip, mockLegs, mockEvents, mockProposal } from './mockData';
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  query,
+  orderBy,
+  limit,
+} from 'firebase/firestore';
 
-// User-scoped in-memory storage maps
-const userLegsStore = new Map<string, Leg[]>();
-const userProposalsStore = new Map<string, RebookingProposal | null>();
-const userEventsStore = new Map<string, TripEvent[]>();
+export interface Identity {
+  uid: string;
+  email?: string | null;
+}
 
-// Initialize Demo Account defaults
 const DEMO_EMAIL = 'alex.vance@aeromind.ai';
-userLegsStore.set(DEMO_EMAIL, [...mockLegs]);
-userProposalsStore.set(DEMO_EMAIL, { ...mockProposal });
-userEventsStore.set(DEMO_EMAIL, [...mockEvents]);
+
+// Demo account keeps the original in-memory mock trip untouched — every
+// other signed-in user's data lives in Firestore under users/{uid}/...
+let demoLegs: Leg[] = [...mockLegs];
+let demoProposal: RebookingProposal | null = { ...mockProposal };
+let demoEvents: TripEvent[] = [...mockEvents];
+
+export function isDemo(who?: Identity | null): boolean {
+  return !who || !who.email || who.email.toLowerCase() === DEMO_EMAIL;
+}
+
+function legsCol(uid: string) {
+  return collection(db, 'users', uid, 'legs');
+}
+function eventsCol(uid: string) {
+  return collection(db, 'users', uid, 'events');
+}
+function proposalsCol(uid: string) {
+  return collection(db, 'users', uid, 'proposals');
+}
 
 export class TripStore {
-  private static getUserKey(userEmail?: string | null): string {
-    if (!userEmail || userEmail === DEMO_EMAIL) {
-      return DEMO_EMAIL;
-    }
-    return userEmail.toLowerCase();
-  }
-
-  static getTrip(userEmail?: string | null): Trip {
-    const key = this.getUserKey(userEmail);
-    if (key === DEMO_EMAIL) {
-      return mockTrip;
-    }
+  static async getTrip(who?: Identity | null): Promise<Trip> {
+    if (isDemo(who)) return mockTrip;
+    const uid = who!.uid;
     return {
-      id: `trip_${key.replace(/[^a-z0-9]/g, '_')}`,
-      ownerUid: key,
+      id: `trip_${uid}`,
+      ownerUid: uid,
       title: 'My Travel Itinerary',
       companions: [],
       status: 'active',
@@ -36,146 +54,198 @@ export class TripStore {
     };
   }
 
-  static getLegs(userEmail?: string | null): Leg[] {
-    const key = this.getUserKey(userEmail);
-    if (!userLegsStore.has(key)) {
-      if (key === DEMO_EMAIL) {
-        userLegsStore.set(DEMO_EMAIL, [...mockLegs]);
-      } else {
-        userLegsStore.set(key, []); // New production user starts with clean 0 legs state
-      }
-    }
-    return userLegsStore.get(key) || [];
+  static async getLegs(who?: Identity | null): Promise<Leg[]> {
+    if (isDemo(who)) return demoLegs;
+    const snap = await getDocs(legsCol(who!.uid));
+    return snap.docs.map((d) => d.data() as Leg);
   }
 
-  static addLeg(leg: Leg, userEmail?: string | null): Leg {
-    const key = this.getUserKey(userEmail);
-    const existing = this.getLegs(key);
-    const updated = [leg, ...existing];
-    userLegsStore.set(key, updated);
+  static async addLeg(leg: Leg, who?: Identity | null): Promise<Leg> {
+    if (isDemo(who)) {
+      demoLegs = [leg, ...demoLegs];
+    } else {
+      await setDoc(doc(legsCol(who!.uid), leg.id), leg);
+    }
 
-    this.addEvent({
-      id: `evt_${Date.now()}`,
-      tripId: leg.tripId,
-      legId: leg.id,
-      eventType: 'LEG_ADDED',
-      payload: { title: leg.title, flightNo: leg.flightNo, type: leg.type },
-      ts: Date.now(),
-    }, key);
+    await this.addEvent(
+      {
+        id: `evt_${Date.now()}`,
+        tripId: leg.tripId,
+        legId: leg.id,
+        eventType: 'LEG_ADDED',
+        payload: { title: leg.title, flightNo: leg.flightNo, type: leg.type },
+        ts: Date.now(),
+      },
+      who
+    );
 
     return leg;
   }
 
-  static updateLeg(legId: string, updates: Partial<Leg>, userEmail?: string | null): Leg | null {
-    const key = this.getUserKey(userEmail);
-    const existing = this.getLegs(key);
+  static async updateLeg(
+    legId: string,
+    updates: Partial<Leg>,
+    who?: Identity | null
+  ): Promise<Leg | null> {
     let updatedLeg: Leg | null = null;
 
-    const updated = existing.map((leg) => {
-      if (leg.id === legId) {
-        updatedLeg = { ...leg, ...updates, updatedAt: Date.now() };
-        return updatedLeg;
+    if (isDemo(who)) {
+      demoLegs = demoLegs.map((leg) => {
+        if (leg.id === legId) {
+          updatedLeg = { ...leg, ...updates, updatedAt: Date.now() };
+          return updatedLeg;
+        }
+        return leg;
+      });
+    } else {
+      const uid = who!.uid;
+      const existing = await this.getLegs(who);
+      const found = existing.find((l) => l.id === legId);
+      if (found) {
+        updatedLeg = { ...found, ...updates, updatedAt: Date.now() };
+        await updateDoc(doc(legsCol(uid), legId), { ...updates, updatedAt: Date.now() });
       }
-      return leg;
-    });
-
-    userLegsStore.set(key, updated);
+    }
 
     if (updatedLeg) {
-      this.addEvent({
-        id: `evt_${Date.now()}`,
-        tripId: (updatedLeg as Leg).tripId,
-        legId: legId,
-        eventType: 'LEG_UPDATED',
-        payload: updates,
-        ts: Date.now(),
-      }, key);
+      await this.addEvent(
+        {
+          id: `evt_${Date.now()}`,
+          tripId: (updatedLeg as Leg).tripId,
+          legId,
+          eventType: 'LEG_UPDATED',
+          payload: updates,
+          ts: Date.now(),
+        },
+        who
+      );
     }
 
     return updatedLeg;
   }
 
-  static getEvents(userEmail?: string | null): TripEvent[] {
-    const key = this.getUserKey(userEmail);
-    const events = userEventsStore.get(key) || [];
-    return events.sort((a, b) => b.ts - a.ts);
+  static async getEvents(who?: Identity | null): Promise<TripEvent[]> {
+    if (isDemo(who)) {
+      return [...demoEvents].sort((a, b) => b.ts - a.ts);
+    }
+    const q = query(eventsCol(who!.uid), orderBy('ts', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => d.data() as TripEvent);
   }
 
-  static addEvent(event: TripEvent, userEmail?: string | null): TripEvent {
-    const key = this.getUserKey(userEmail);
-    const existing = userEventsStore.get(key) || [];
-    userEventsStore.set(key, [event, ...existing]);
+  static async addEvent(event: TripEvent, who?: Identity | null): Promise<TripEvent> {
+    if (isDemo(who)) {
+      demoEvents = [event, ...demoEvents];
+    } else {
+      await setDoc(doc(eventsCol(who!.uid), event.id), event);
+    }
     return event;
   }
 
-  static getLatestProposal(userEmail?: string | null): RebookingProposal | null {
-    const key = this.getUserKey(userEmail);
-    if (!userProposalsStore.has(key)) {
-      return key === DEMO_EMAIL ? { ...mockProposal } : null;
-    }
-    return userProposalsStore.get(key) || null;
+  static async getLatestProposal(who?: Identity | null): Promise<RebookingProposal | null> {
+    if (isDemo(who)) return demoProposal;
+    const q = query(proposalsCol(who!.uid), orderBy('createdAt', 'desc'), limit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs[0].data() as RebookingProposal;
   }
 
-  static createProposal(proposal: RebookingProposal, userEmail?: string | null): RebookingProposal {
-    const key = this.getUserKey(userEmail);
-    userProposalsStore.set(key, proposal);
+  static async createProposal(
+    proposal: RebookingProposal,
+    who?: Identity | null
+  ): Promise<RebookingProposal> {
+    if (isDemo(who)) {
+      demoProposal = proposal;
+    } else {
+      await setDoc(doc(proposalsCol(who!.uid), proposal.id), proposal);
+    }
 
-    this.addEvent({
-      id: `evt_${Date.now()}`,
-      tripId: proposal.tripId,
-      legId: proposal.legIds[0] || 'trip',
-      eventType: 'REBOOKING_PROPOSED',
-      payload: { summary: proposal.summary, optionsCount: proposal.options.length },
-      ts: Date.now(),
-    }, key);
+    await this.addEvent(
+      {
+        id: `evt_${Date.now()}`,
+        tripId: proposal.tripId,
+        legId: proposal.legIds[0] || 'trip',
+        eventType: 'REBOOKING_PROPOSED',
+        payload: { summary: proposal.summary, optionsCount: proposal.options.length },
+        ts: Date.now(),
+      },
+      who
+    );
 
     return proposal;
   }
 
-  static approveProposal(proposalId: string, chosenOptionId: string, userEmail?: string | null): boolean {
-    const key = this.getUserKey(userEmail);
-    const proposal = this.getLatestProposal(key);
+  static async approveProposal(
+    proposalId: string,
+    chosenOptionId: string,
+    who?: Identity | null
+  ): Promise<boolean> {
+    const proposal = await this.getLatestProposal(who);
     if (!proposal || proposal.id !== proposalId) return false;
 
     const chosen = proposal.options.find((o) => o.id === chosenOptionId) || proposal.options[0];
-    proposal.status = 'approved';
-    proposal.chosenOptionId = chosen.id;
-    userProposalsStore.set(key, proposal);
+    const updatedProposal: RebookingProposal = {
+      ...proposal,
+      status: 'approved',
+      chosenOptionId: chosen.id,
+    };
 
-    const legs = this.getLegs(key);
-    const updatedLegs = legs.map((leg) => {
-      if (leg.type === 'flight' && proposal.legIds.includes(leg.id)) {
-        return {
-          ...leg,
-          flightNo: chosen.flightNo,
-          dep: chosen.departure,
-          arr: chosen.arrival,
-          status: 'onTime' as const,
-          disruptionScore: 12,
-          details: { ...leg.details, carrier: chosen.carrier },
-          updatedAt: Date.now(),
-        };
+    if (isDemo(who)) {
+      demoProposal = updatedProposal;
+      demoLegs = demoLegs.map((leg) =>
+        leg.type === 'flight' && proposal.legIds.includes(leg.id)
+          ? {
+              ...leg,
+              flightNo: chosen.flightNo,
+              dep: chosen.departure,
+              arr: chosen.arrival,
+              status: 'onTime' as const,
+              disruptionScore: 12,
+              details: { ...leg.details, carrier: chosen.carrier },
+              updatedAt: Date.now(),
+            }
+          : leg
+      );
+    } else {
+      const uid = who!.uid;
+      await setDoc(doc(proposalsCol(uid), proposal.id), updatedProposal);
+      const legs = await this.getLegs(who);
+      for (const leg of legs) {
+        if (leg.type === 'flight' && proposal.legIds.includes(leg.id)) {
+          const updates = {
+            flightNo: chosen.flightNo,
+            dep: chosen.departure,
+            arr: chosen.arrival,
+            status: 'onTime' as const,
+            disruptionScore: 12,
+            details: { ...leg.details, carrier: chosen.carrier },
+            updatedAt: Date.now(),
+          };
+          await updateDoc(doc(legsCol(uid), leg.id), updates);
+        }
       }
-      return leg;
-    });
+    }
 
-    userLegsStore.set(key, updatedLegs);
-
-    this.addEvent({
-      id: `evt_${Date.now()}`,
-      tripId: proposal.tripId,
-      legId: proposal.legIds[0] || 'trip',
-      eventType: 'REBOOKING_APPROVED',
-      payload: { chosenFlight: chosen.flightNo, carrier: chosen.carrier },
-      ts: Date.now(),
-    }, key);
+    await this.addEvent(
+      {
+        id: `evt_${Date.now()}`,
+        tripId: proposal.tripId,
+        legId: proposal.legIds[0] || 'trip',
+        eventType: 'REBOOKING_APPROVED',
+        payload: { chosenFlight: chosen.flightNo, carrier: chosen.carrier },
+        ts: Date.now(),
+      },
+      who
+    );
 
     return true;
   }
 
-  static findDownstreamImpactedLegs(startLegId: string, userEmail?: string | null): string[] {
-    const key = this.getUserKey(userEmail);
-    const legs = this.getLegs(key);
+  static async findDownstreamImpactedLegs(
+    startLegId: string,
+    who?: Identity | null
+  ): Promise<string[]> {
+    const legs = await this.getLegs(who);
     const visited = new Set<string>();
     const queue = [startLegId];
 

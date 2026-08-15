@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Sparkles,
   Send,
@@ -27,10 +29,9 @@ interface Message {
 interface AIChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  userEmail?: string | null;
 }
 
-export function AIChatDrawer({ isOpen, onClose, userEmail }: AIChatDrawerProps) {
+export function AIChatDrawer({ isOpen, onClose }: AIChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'msg_welcome',
@@ -77,7 +78,7 @@ export function AIChatDrawer({ isOpen, onClose, userEmail }: AIChatDrawerProps) 
     setIsLoading(true);
 
     try {
-      const res = await sendAdvisorChatApi(query, userEmail);
+      const res = await sendAdvisorChatApi(query);
       if (res && res.reply) {
         setMessages((prev) => [
           ...prev,
@@ -91,22 +92,14 @@ export function AIChatDrawer({ isOpen, onClose, userEmail }: AIChatDrawerProps) 
       } else {
         throw new Error('No response');
       }
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : null;
       setMessages((prev) => [
         ...prev,
         {
           id: `ast_${Date.now()}`,
           role: 'assistant',
-          content:
-            'Flight AI302 carries a predictive delay risk score of 78/100 (85 min delay). Direct non-stop flight UA868 is operating on-time with an 18% delay risk score.',
-          citations: [
-            {
-              toolName: 'get_live_flight_status',
-              source: 'OpenSky Telemetry & Real-Time Schedule Engine',
-              timestamp: 'Just now',
-              data: { flightNo: 'AI302' },
-            },
-          ],
+          content: `Sorry, I couldn't reach the flight data engine just now${message ? ` (${message})` : ''}. Please try again in a moment.`,
         },
       ]);
     } finally {
@@ -192,43 +185,79 @@ export function AIChatDrawer({ isOpen, onClose, userEmail }: AIChatDrawerProps) 
                   }`}
                 >
                   {/* Message Content formatted with Markdown rendering */}
-                  <div className="prose prose-xs dark:prose-invert max-w-none space-y-2 font-manrope">
-                    {msg.content.split('\n\n').map((paragraph, pIdx) => {
-                      if (paragraph.startsWith('|')) {
-                        // Render Markdown Table
-                        const rows = paragraph.split('\n').filter((r) => r.trim().length > 0);
-                        return (
-                          <div key={pIdx} className="overflow-x-auto my-2 rounded-lg border border-black/10 dark:border-white/10">
+                  <div className="max-w-none space-y-2 font-manrope [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ children }) => (
+                          <h1 className="text-sm font-bold mt-3 mb-1.5 first:mt-0">{children}</h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-sm font-bold mt-3 mb-1.5 first:mt-0">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-xs font-bold mt-3 mb-1.5 first:mt-0">{children}</h3>
+                        ),
+                        p: ({ children }) => (
+                          <p className="leading-relaxed mb-2 last:mb-0">{children}</p>
+                        ),
+                        strong: ({ children }) => (
+                          <strong className="font-bold">{children}</strong>
+                        ),
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => (
+                          <ul className="list-disc pl-4 space-y-1 mb-2 last:mb-0">{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal pl-4 space-y-1 mb-2 last:mb-0">{children}</ol>
+                        ),
+                        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-2 border-black/20 dark:border-white/20 pl-3 my-2 text-neutral-600 dark:text-neutral-400">
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({ children }) => (
+                          <code className="px-1 py-0.5 rounded bg-black/5 dark:bg-white/10 font-mono text-[11px]">
+                            {children}
+                          </code>
+                        ),
+                        a: ({ children, href }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline underline-offset-2 hover:text-black dark:hover:text-white"
+                          >
+                            {children}
+                          </a>
+                        ),
+                        hr: () => (
+                          <hr className="my-2 border-black/10 dark:border-white/10" />
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-2 rounded-lg border border-black/10 dark:border-white/10">
                             <table className="w-full text-left text-[11px] border-collapse min-w-[500px]">
-                              <tbody>
-                                {rows.map((row, rIdx) => {
-                                  if (row.includes('---')) return null;
-                                  const cells = row.split('|').filter((_, cIdx, arr) => cIdx > 0 && cIdx < arr.length - 1);
-                                  const isHeader = rIdx === 0;
-                                  return (
-                                    <tr
-                                      key={rIdx}
-                                      className={isHeader ? 'bg-black/5 dark:bg-white/10 font-bold border-b border-black/10 dark:border-white/10' : 'border-b border-black/5 dark:border-white/5'}
-                                    >
-                                      {cells.map((cell, cIdx) => (
-                                        <td key={cIdx} className="p-2 whitespace-nowrap">
-                                          {cell.trim().replace(/\*\*/g, '')}
-                                        </td>
-                                      ))}
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
+                              {children}
                             </table>
                           </div>
-                        );
-                      }
-                      return (
-                        <p key={pIdx} className="whitespace-pre-wrap leading-relaxed">
-                          {paragraph}
-                        </p>
-                      );
-                    })}
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-black/5 dark:bg-white/10 font-bold border-b border-black/10 dark:border-white/10">
+                            {children}
+                          </thead>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="border-b border-black/5 dark:border-white/5 last:border-b-0">
+                            {children}
+                          </tr>
+                        ),
+                        th: ({ children }) => <th className="p-2 whitespace-nowrap">{children}</th>,
+                        td: ({ children }) => <td className="p-2 whitespace-nowrap">{children}</td>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
 
                   {/* Citations Footer */}

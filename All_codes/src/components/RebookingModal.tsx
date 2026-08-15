@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { modalOverlay, modalContent } from '@/styles/animations';
 import { RebookingProposal } from '@/types';
+import { Identity } from '@/lib/tripStore';
 import { ComparisonTable } from './ComparisonTable';
 import { ShieldCheck, ChevronDown, ChevronUp, Loader2, CheckCircle2, X } from 'lucide-react';
 
@@ -13,7 +14,8 @@ interface RebookingModalProps {
   isOpen: boolean;
   proposal: RebookingProposal | null;
   onClose: () => void;
-  onApproveSuccess: () => void;
+  onApproveSuccess: (chosenFlightNo: string) => void;
+  who?: Identity | null;
 }
 
 export function RebookingModal({
@@ -21,6 +23,7 @@ export function RebookingModal({
   proposal,
   onClose,
   onApproveSuccess,
+  who,
 }: RebookingModalProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<string>(
     proposal?.options[0]?.id || 'opt_1_ua868'
@@ -37,9 +40,9 @@ export function RebookingModal({
     setIsApproving(true);
 
     try {
-      const res = await processRebookingApi('approve', proposal.id, selectedOption.id);
+      const res = await processRebookingApi('approve', proposal.id, selectedOption.id, who);
       if (res.success) {
-        onApproveSuccess();
+        onApproveSuccess(selectedOption.flightNo);
         onClose();
       }
     } catch {
@@ -112,12 +115,14 @@ export function RebookingModal({
               <span className="px-2 py-0.5 rounded-md border border-gray-300 dark:border-gray-700 bg-bg-light dark:bg-bg-dark">
                 ✈️ Flight: {selectedOption.flightNo} ({selectedOption.departure})
               </span>
-              <span className="px-2 py-0.5 rounded-md border border-gray-300 dark:border-gray-700 bg-bg-light dark:bg-bg-dark">
-                🏨 Hotel: Grand Hyatt (+1h shift)
-              </span>
-              <span className="px-2 py-0.5 rounded-md border border-gray-300 dark:border-gray-700 bg-bg-light dark:bg-bg-dark">
-                🚗 Car: Hertz Tesla (+1h shift)
-              </span>
+              {proposal.affectedLegNames.slice(1).map((name, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-md border border-gray-300 dark:border-gray-700 bg-bg-light dark:bg-bg-dark"
+                >
+                  {name}
+                </span>
+              ))}
             </div>
           </div>
 

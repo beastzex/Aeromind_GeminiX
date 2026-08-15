@@ -46,3 +46,11 @@ Thumbs.db
 next-env.d.ts
 .cache/
 .vite/
+
+# Firebase Cloud Functions build output & local emulator state
+functions/lib/
+functions/.env
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

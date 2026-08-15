@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { modalOverlay, modalContent } from '@/styles/animations';
 import { Camera, Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Leg } from '@/types';
+import { Identity } from '@/lib/tripStore';
 
 import { scanBoardingPassApi } from '@/services/api';
 
@@ -12,9 +13,10 @@ interface ScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onScanSuccess: (leg: Leg) => void;
+  who?: Identity | null;
 }
 
-export function ScannerModal({ isOpen, onClose, onScanSuccess }: ScannerModalProps) {
+export function ScannerModal({ isOpen, onClose, onScanSuccess, who }: ScannerModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -35,7 +37,7 @@ export function ScannerModal({ isOpen, onClose, onScanSuccess }: ScannerModalPro
     setErrorMsg(null);
 
     try {
-      const data = await scanBoardingPassApi(file?.name || 'boarding_pass.png');
+      const data = await scanBoardingPassApi(file, who);
 
       if (data.success && data.leg) {
         onScanSuccess(data.leg);
@@ -43,8 +45,13 @@ export function ScannerModal({ isOpen, onClose, onScanSuccess }: ScannerModalPro
       } else {
         throw new Error('Failed to parse boarding pass image.');
       }
-    } catch {
-      setErrorMsg('Could not read boarding pass clearly. Using manual entry fallback.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : null;
+      setErrorMsg(
+        message && !message.includes('parse boarding pass')
+          ? message
+          : 'Could not read boarding pass clearly. Using manual entry fallback.'
+      );
     } finally {
       setIsScanning(false);
     }
