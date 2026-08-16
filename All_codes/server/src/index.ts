@@ -10,6 +10,7 @@ import { processAdvisorChat } from './lib/advisorChat';
 import { searchRealFlights } from './lib/flightSearch';
 import { getRealFlightStatus } from './lib/flightStatus';
 import { parseBoardingPassImage } from './lib/parseBoardingPass';
+import { mintGeminiLiveToken, mintDeepgramAgentToken } from './lib/mintVoiceToken';
 
 // ---------------------------------------------------------------------------
 // Firebase Admin — used only to verify ID tokens and read Firestore. All the
@@ -36,6 +37,7 @@ const keys = {
   aviationStackKey: process.env.AVIATIONSTACK_KEY,
   openSkyClientId: process.env.OPENSKY_CLIENT_ID,
   openSkyClientSecret: process.env.OPENSKY_CLIENT_SECRET,
+  deepgramApiKey: process.env.DEEPGRAM_API_KEY,
 };
 
 // ---------------------------------------------------------------------------
@@ -112,6 +114,7 @@ app.get('/api/health', (_req, res) => {
       groq: Boolean(keys.groqApiKey),
       aviationStack: Boolean(keys.aviationStackKey),
       openSky: Boolean(keys.openSkyClientId && keys.openSkyClientSecret),
+      deepgram: Boolean(keys.deepgramApiKey),
     },
   });
 });
@@ -125,6 +128,7 @@ app.get(('/'), (_req, res) => {
       '/api/flights/search',
       '/api/flights/status',
       '/api/boarding-pass/parse',
+      '/api/voice/token',
     ],
   });
 });
@@ -166,6 +170,30 @@ app.post(
       throw new ApiError(400, 'flightNo is required');
     }
     return getRealFlightStatus(flightNo, date || new Date().toISOString().slice(0, 10), keys);
+  })
+);
+
+app.post(
+  '/api/voice/token',
+  route(async (req) => {
+    const { provider } = req.body ?? {};
+    if (provider !== 'gemini' && provider !== 'deepgram') {
+      throw new ApiError(400, 'provider must be "gemini" or "deepgram"');
+    }
+    if (provider === 'gemini') {
+      if (!keys.geminiApiKey) throw new ApiError(503, 'GEMINI_API_KEY is not configured on the server');
+      try {
+        return await mintGeminiLiveToken(keys.geminiApiKey);
+      } catch (err) {
+        throw new ApiError(502, err instanceof Error ? err.message : 'Could not mint Gemini Live token');
+      }
+    }
+    if (!keys.deepgramApiKey) throw new ApiError(503, 'DEEPGRAM_API_KEY is not configured on the server');
+    try {
+      return await mintDeepgramAgentToken(keys.deepgramApiKey);
+    } catch (err) {
+      throw new ApiError(502, err instanceof Error ? err.message : 'Could not mint Deepgram token');
+    }
   })
 );
 

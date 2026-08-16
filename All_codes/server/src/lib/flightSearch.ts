@@ -1,4 +1,5 @@
 import { FlightSearchResult } from './types';
+import { searchMockFlights } from './mockFlights';
 
 const AIRPORT_KEYWORDS: Record<string, string> = {
   sfo: 'SFO',
@@ -102,7 +103,7 @@ export async function searchRealFlights(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      return { matchedFlights: [], filterApplied, live: false };
+      return { matchedFlights: searchMockFlights({ origin, destination, startHour, endHour }), filterApplied, live: false };
     }
 
     const json = (await res.json()) as { data?: unknown[] };
@@ -147,8 +148,12 @@ export async function searchRealFlights(
       results = results.filter((f) => f.depHour >= startHour && f.depHour <= endHour);
     }
 
+    if (results.length === 0) {
+      return { matchedFlights: searchMockFlights({ origin, destination, startHour, endHour }), filterApplied, live: false };
+    }
+
     return { matchedFlights: results.slice(0, 8), filterApplied, live: true };
   } catch {
-    return { matchedFlights: [], filterApplied, live: false };
+    return { matchedFlights: searchMockFlights({ origin, destination, startHour, endHour }), filterApplied, live: false };
   }
 }

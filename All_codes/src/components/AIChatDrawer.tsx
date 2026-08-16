@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { sendAdvisorChatApi } from '@/services/api';
 import { ToolCallCitation } from '@/lib/groqClient';
+import { VoiceAssistantPanel } from './VoiceAssistantPanel';
 
 interface Message {
   id: string;
@@ -156,12 +157,15 @@ export function AIChatDrawer({ isOpen, onClose }: AIChatDrawerProps) {
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5 stroke-[1.5]" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <VoiceAssistantPanel />
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5 stroke-[1.5]" />
+              </button>
+            </div>
           </div>
 
           {/* Chat Messages Stream */}

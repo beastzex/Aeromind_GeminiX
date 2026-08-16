@@ -16,6 +16,8 @@ Built with **Next.js 14 (App Router)**, **React 18**, **TypeScript**, **Tailwind
 6. **Gate-Change Whisper Alerts & Walking ETA**: Ambient low-friction voice nudges with walking ETA vs boarding countdown bar.
 7. **AR Gate Compass Wayfinding**: Camera overlay with 2D directional compass arrow powered by device orientation sensors.
 8. **Post-Trip AI Journal**: Auto-compiled story timeline with scroll-linked reveal animations (`/journal/trip_sfo_2026`).
+9. **Voice Navigation**: Tap-to-speak browser commands ("open advisor", "go to dashboard") route instantly via the Web Speech API — no AI call, no network round-trip.
+10. **Voice Assistant**: Push-to-talk spoken conversation grounded in the same live flight data as the text advisor. Primary: **Gemini Live API**. Automatic fallback to **Deepgram Voice Agent API** if the Gemini session fails to connect.
 
 ---
 
@@ -64,6 +66,21 @@ DEMO_MODE=false
 ```
 
 > **Note:** If `GROQ_API_KEY` or external keys are missing, AeroMind's built-in multi-level fallback chain automatically switches to high-fidelity demo fixtures, guaranteeing 100% demo stability without crashing.
+
+#### Voice API keys (server-side only)
+
+The Voice Assistant needs two more keys, minted into short-lived tokens by
+`server/src/lib/mintVoiceToken.ts` — like `GROQ_API_KEY`, neither ever
+reaches the browser. Set them in `server/.env` (copy from
+`server/.env.example`), not this file:
+
+```env
+GEMINI_API_KEY=      # Google AI Studio key — https://aistudio.google.com/apikey
+DEEPGRAM_API_KEY=    # Deepgram project key, Member role or higher — https://console.deepgram.com/
+```
+
+See `server/.env.example` for the full, authoritative list of server-side
+keys (this section only covers the client-facing subset in `All_codes/.env`).
 
 ### Run Development Server
 

@@ -7,6 +7,8 @@ import { ToggleTheme } from './ToggleTheme';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { AuthModal } from './AuthModal';
+import { VoiceNavButton } from './VoiceNavButton';
+import { subscribeVoiceAction } from '@/lib/voiceNav/actionBus';
 
 export function HomeNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -28,6 +30,15 @@ export function HomeNavbar() {
       window.removeEventListener('scroll', handleScroll);
       unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeVoiceAction((action) => {
+      if (action.type === 'closeOverlay') {
+        setAuthModalOpen(false);
+        setMobileMenuOpen(false);
+      }
+    });
   }, []);
 
   return (
@@ -85,6 +96,8 @@ export function HomeNavbar() {
               <UserIcon className="w-3.5 h-3.5" />
               <span>{currentUser ? currentUser.email?.split('@')[0] : 'Sign In'}</span>
             </button>
+
+            <VoiceNavButton />
 
             <ToggleTheme animationType="diag-down-right" />
 

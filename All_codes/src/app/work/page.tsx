@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { DigitalTwinGraph } from '@/components/DigitalTwinGraph';
 import { ScannerModal } from '@/components/ScannerModal';
@@ -13,6 +13,7 @@ import { AIChatDrawer } from '@/components/AIChatDrawer';
 import { TripStore, isDemo } from '@/lib/tripStore';
 import { Leg, RebookingProposal, Trip } from '@/types';
 import { simulateDisruptionApi } from '@/services/api';
+import { subscribeVoiceAction, VoiceAction } from '@/lib/voiceNav/actionBus';
 import {
   AlertCircle,
   Camera,
@@ -38,6 +39,10 @@ import {
 import { Link } from 'react-router-dom';
 
 type TabType = 'itinerary' | 'tracker' | 'pass' | 'disruption' | 'wayfinding' | 'tester';
+
+// AR Wayfinding is a modal (isAROpen), not one of the visible tab buttons —
+// excluded from the cycle order used by "next tab" / "previous tab" voice commands.
+const VISIBLE_TAB_ORDER: TabType[] = ['itinerary', 'tracker', 'pass', 'disruption', 'tester'];
 
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -110,6 +115,51 @@ export default function WorkPage() {
       setWhisperAlertMsg('Could not run the disruption simulation right now.');
     }
   };
+
+  // Subscribing fresh on every render (e.g. depending on handleSimulateDisruption,
+  // which is a new function each render) opens a window with zero listeners
+  // between unsubscribe and resubscribe — long enough for a queued voice
+  // command to land while nothing's listening. A ref keeps the handler body
+  // current without ever tearing down and recreating the subscription itself.
+  const voiceActionHandlerRef = useRef<(action: VoiceAction) => void>(() => {});
+  voiceActionHandlerRef.current = (action) => {
+    switch (action.type) {
+      case 'openScanner':
+        setIsScannerOpen(true);
+        break;
+      case 'setTab':
+        setActiveTab(action.tab);
+        break;
+      case 'cycleTab':
+        setActiveTab((current) => {
+          const currentIndex = VISIBLE_TAB_ORDER.indexOf(current);
+          const delta = action.direction === 'next' ? 1 : -1;
+          const nextIndex = (currentIndex + delta + VISIBLE_TAB_ORDER.length) % VISIBLE_TAB_ORDER.length;
+          return VISIBLE_TAB_ORDER[nextIndex];
+        });
+        break;
+      case 'simulateDisruption':
+        handleSimulateDisruption();
+        break;
+      case 'openArCompass':
+        setIsAROpen(true);
+        break;
+      case 'openAiChat':
+        setIsAIChatOpen(true);
+        break;
+      case 'closeOverlay':
+        setIsScannerOpen(false);
+        setIsRebookingOpen(false);
+        setIsAROpen(false);
+        setIsAIChatOpen(false);
+        setWhisperAlertMsg(null);
+        break;
+    }
+  };
+
+  useEffect(() => {
+    return subscribeVoiceAction((action) => voiceActionHandlerRef.current(action));
+  }, []);
 
   const handleScanSuccess = (newLeg: Leg) => {
     loadTripData(who);

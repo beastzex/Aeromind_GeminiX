@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { AuthModal } from './AuthModal';
+import { VoiceNavButton } from './VoiceNavButton';
+import { subscribeVoiceAction } from '@/lib/voiceNav/actionBus';
 
 interface HeaderProps {
   tripStatus?: 'onTime' | 'atRisk' | 'disrupted';
@@ -29,6 +31,14 @@ export function Header({
       setCurrentUser(user);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    return subscribeVoiceAction((action) => {
+      if (action.type === 'closeOverlay') {
+        setAuthModalOpen(false);
+      }
+    });
   }, []);
 
   return (
@@ -120,6 +130,8 @@ export function Header({
             >
               <Eye className="w-4 h-4 stroke-[1.5]" />
             </button>
+
+            <VoiceNavButton />
 
             <ToggleTheme animationType="diag-down-right" />
           </div>

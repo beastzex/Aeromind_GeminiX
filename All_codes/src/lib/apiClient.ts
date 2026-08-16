@@ -1,5 +1,6 @@
 import { auth } from './firebase';
-import { FlightSearchResult } from '@/types';
+import { FlightSearchResult, FlightCacheEntry } from '@/types';
+import { VoiceProvider, VoiceTokenResponse } from '@/types/voice';
 
 // Base URL for the native backend (server/). Empty means same-origin, which is
 // what the Vite dev proxy provides — see vite.config.ts. Set
@@ -58,5 +59,11 @@ export interface FlightSearchResponse {
 export const searchFlights = (query: string) =>
   apiPost<FlightSearchResponse>('/api/flights/search', { query });
 
+export const getFlightStatus = (flightNo: string, date?: string) =>
+  apiPost<FlightCacheEntry>('/api/flights/status', { flightNo, date });
+
 export const parseBoardingPass = (imageBase64: string, mimeType: string) =>
   apiPost<ParsedBoardingPass>('/api/boarding-pass/parse', { imageBase64, mimeType });
+
+export const mintVoiceToken = (provider: VoiceProvider) =>
+  apiPost<VoiceTokenResponse>('/api/voice/token', { provider });

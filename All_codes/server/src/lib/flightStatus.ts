@@ -1,4 +1,5 @@
 import { FlightCacheEntry, LegStatus } from './types';
+import { findMockFlight } from './mockFlights';
 
 const cache = new Map<string, FlightCacheEntry>();
 
@@ -108,13 +109,28 @@ export async function getRealFlightStatus(
     }
   }
 
-  const entry: FlightCacheEntry = {
-    flightNo_date: cacheKey,
-    lastStatus: 'onTime',
-    delayMinutes: 0,
-    fetchedAt: now,
-    source: 'unavailable',
-  };
+  // Live data unavailable (no key, or no match) — fall back to the known
+  // demo fixture set rather than leaving the caller with nothing. Only
+  // recognized flight numbers get mock data; anything else stays honestly
+  // "unavailable" instead of inventing a gate or delay.
+  const mock = findMockFlight(flightNo);
+  const entry: FlightCacheEntry = mock
+    ? {
+        flightNo_date: cacheKey,
+        lastStatus: mock.status,
+        delayMinutes: mock.delayMinutes,
+        gate: mock.gate,
+        terminal: mock.terminal,
+        fetchedAt: now,
+        source: 'mock',
+      }
+    : {
+        flightNo_date: cacheKey,
+        lastStatus: 'onTime',
+        delayMinutes: 0,
+        fetchedAt: now,
+        source: 'unavailable',
+      };
   cache.set(cacheKey, entry);
   return entry;
 }
