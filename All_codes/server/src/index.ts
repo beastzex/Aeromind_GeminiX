@@ -52,6 +52,23 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 // Boarding-pass scans arrive as base64, so the default 100kb limit is too small.
 app.use(express.json({ limit: '15mb' }));
 
+// Request log — one line per call, emitted on response so it carries the real
+// status and duration. Bodies are never logged: they contain boarding-pass
+// images and chat content.
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - startedAt;
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const who = req.headers.authorization ? 'auth' : 'anon';
+    const mark = res.statusCode >= 500 ? '✗' : res.statusCode >= 400 ? '!' : '✓';
+    console.log(
+      `${mark} ${time}  ${req.method} ${req.originalUrl}  ${res.statusCode}  ${ms}ms  [${who}]`
+    );
+  });
+  next();
+});
+
 /** HTTP status + message, mirroring the HttpsError codes the callables used. */
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -119,7 +136,11 @@ app.post(
     if (typeof message !== 'string' || !message.trim()) {
       throw new ApiError(400, 'message is required');
     }
-    return processAdvisorChat(message, await readAuth(req), keys);
+    const result = await processAdvisorChat(message, await readAuth(req), keys);
+    // Which model actually answered — Gemini 503s fall back to Groq silently.
+    const provider = result.citations.find((c) => c.toolName === 'ai_model')?.data?.provider;
+    if (provider) console.log(`    └ answered by ${provider}`);
+    return result;
   })
 );
 

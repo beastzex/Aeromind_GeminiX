@@ -5,7 +5,7 @@ export interface ProviderKeys {
   groqApiKey?: string;
 }
 
-const GEMINI_MODEL = 'gemini-3.7-flash';
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
 const GROQ_VISION_MODEL = 'qwen/qwen3.6-27b';
 
