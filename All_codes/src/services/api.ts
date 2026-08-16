@@ -2,7 +2,7 @@ import { TripStore, Identity, isDemo } from '@/lib/tripStore';
 import { calculateDisruptionScore } from '@/lib/disruptionScore';
 import { mockProposal } from '@/lib/mockData';
 import { processAdvisorMessage } from '@/lib/groqClient';
-import { searchFlightsCallable, parseBoardingPassCallable } from '@/lib/functionsClient';
+import { searchFlights, parseBoardingPass } from '@/lib/apiClient';
 import { Leg, RebookingProposal } from '@/types';
 
 function fileToBase64(file: File): Promise<string> {
@@ -51,8 +51,8 @@ export async function simulateDisruptionApi(who?: Identity | null) {
     } else {
       const routeMatch = flightLeg.title.match(/\(([A-Z]{3})\).*\(([A-Z]{3})\)/);
       const query = routeMatch ? `direct flights ${routeMatch[1]} to ${routeMatch[2]}` : flightLeg.title;
-      const searchRes = await searchFlightsCallable({ query });
-      const alternatives = searchRes.data.matchedFlights
+      const searchRes = await searchFlights(query);
+      const alternatives = searchRes.matchedFlights
         .filter((f) => f.flightNo !== flightLeg.flightNo)
         .slice(0, 2);
 
@@ -132,7 +132,7 @@ export async function scanBoardingPassApi(file: File | null, who?: Identity | nu
   }
 
   const imageBase64 = await fileToBase64(file);
-  const parsed = (await parseBoardingPassCallable({ imageBase64, mimeType: file.type })).data;
+  const parsed = await parseBoardingPass(imageBase64, file.type);
 
   const newLeg: Leg = await TripStore.addLeg(
     {

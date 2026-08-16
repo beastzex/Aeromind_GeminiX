@@ -1,5 +1,4 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from './firebase';
+import { apiPost } from './apiClient';
 
 export interface ToolCallCitation {
   toolName: string;
@@ -13,14 +12,8 @@ interface AdvisorChatResponse {
   citations: ToolCallCitation[];
 }
 
-const advisorChatCallable = httpsCallable<{ message: string }, AdvisorChatResponse>(
-  functions,
-  'advisorChat'
-);
-
 export async function processAdvisorMessage(
   userMessage: string
 ): Promise<AdvisorChatResponse> {
-  const res = await advisorChatCallable({ message: userMessage });
-  return res.data;
+  return apiPost<AdvisorChatResponse>('/api/advisor-chat', { message: userMessage });
 }

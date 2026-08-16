@@ -23,8 +23,11 @@ export async function generateText(
         contents: `${systemPrompt}\n\nUser: ${userMessage}`,
       });
       if (response.text) return { text: response.text, provider: 'gemini' };
-    } catch {
-      // Fall through to Groq
+      console.warn('[gemini] empty response, falling back to Groq');
+    } catch (err) {
+      // Fall through to Groq — but say why, so a bad key or model name is not
+      // indistinguishable from normal operation.
+      console.warn('[gemini] text generation failed, falling back to Groq:', err);
     }
   }
 

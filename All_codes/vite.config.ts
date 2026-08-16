@@ -15,6 +15,9 @@ const PUBLIC_ENV_KEYS = [
   'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
   'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
   'NEXT_PUBLIC_FIREBASE_APP_ID',
+  // Base URL of the native backend (server/). Empty in dev — the proxy below
+  // makes /api same-origin. Not a secret: it's just a URL.
+  'NEXT_PUBLIC_API_BASE_URL',
 ];
 
 export default defineConfig(({ mode }) => {
@@ -28,6 +31,16 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+      },
+    },
+    server: {
+      // Proxy /api to the native backend (server/) so the browser sees it as
+      // same-origin in dev — no CORS preflight, no base URL to configure.
+      proxy: {
+        '/api': {
+          target: env.API_PROXY_TARGET || 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
     },
   };

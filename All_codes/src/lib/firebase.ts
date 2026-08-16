@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { getFunctions } from 'firebase/functions';
 
 const env = typeof process !== 'undefined' && process.env ? process.env : {};
 
@@ -15,8 +14,10 @@ const firebaseConfig = {
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Firebase is used for Auth and Firestore only. Everything that needs a secret
+// API key (Gemini, Groq, AviationStack, OpenSky) goes through the native
+// backend in server/ — see src/lib/apiClient.ts.
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const functions = getFunctions(app);
 
 

@@ -18,6 +18,14 @@ out/
 .env.production.local
 assets/credentials.json
 
+# Firebase service account private keys — never commit
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Native backend
+server/.env
+server/dist/
+
 # Logs
 logs/
 *.log
@@ -47,9 +55,7 @@ next-env.d.ts
 .cache/
 .vite/
 
-# Firebase Cloud Functions build output & local emulator state
-functions/lib/
-functions/.env
+# Firebase local state
 .firebase/
 firebase-debug.log
 firestore-debug.log

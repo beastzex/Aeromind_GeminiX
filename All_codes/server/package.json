@@ -1,0 +1,28 @@
+{
+  "name": "aeromind-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AeroMind native backend — server-side proxy for Gemini, Groq, OpenSky, and AviationStack so secret keys never reach the browser. Replaces the Cloud Functions callables; Firebase is used only for Auth and Firestore.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "firebase-admin": "^12.7.0",
+    "groq-sdk": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
