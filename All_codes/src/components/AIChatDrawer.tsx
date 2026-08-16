@@ -151,7 +151,7 @@ export function AIChatDrawer({ isOpen, onClose }: AIChatDrawerProps) {
                   </span>
                 </h3>
                 <span className="text-[10px] text-neutral-500 font-mono">
-                  Groq GPT-OSS-120B · OpenSky Telemetry · Non-Stop Engine
+                  Gemini · Groq Fallback · OpenSky Telemetry
                 </span>
               </div>
             </div>

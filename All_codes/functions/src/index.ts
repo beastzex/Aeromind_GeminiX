@@ -9,13 +9,14 @@ import { parseBoardingPassImage } from './parseBoardingPass';
 
 admin.initializeApp();
 
+const geminiApiKey = defineSecret('GEMINI_API_KEY');
 const groqApiKey = defineSecret('GROQ_API_KEY');
 const aviationStackKey = defineSecret('AVIATIONSTACK_KEY');
 const openSkyClientId = defineSecret('OPENSKY_CLIENT_ID');
 const openSkyClientSecret = defineSecret('OPENSKY_CLIENT_SECRET');
 
 export const advisorChat = onCall(
-  { secrets: [groqApiKey, aviationStackKey, openSkyClientId, openSkyClientSecret] },
+  { secrets: [geminiApiKey, groqApiKey, aviationStackKey, openSkyClientId, openSkyClientSecret] },
   async (request) => {
     const message = request.data?.message;
     if (typeof message !== 'string' || !message.trim()) {
@@ -27,6 +28,7 @@ export const advisorChat = onCall(
       : undefined;
 
     return processAdvisorChat(message, auth, {
+      geminiApiKey: geminiApiKey.value(),
       groqApiKey: groqApiKey.value(),
       aviationStackKey: aviationStackKey.value(),
       openSkyClientId: openSkyClientId.value(),
@@ -60,7 +62,7 @@ export const flightStatus = onCall(
 );
 
 export const parseBoardingPass = onCall(
-  { secrets: [groqApiKey], timeoutSeconds: 60 },
+  { secrets: [geminiApiKey, groqApiKey], timeoutSeconds: 60 },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Sign in to scan a boarding pass');
@@ -70,7 +72,10 @@ export const parseBoardingPass = onCall(
       throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required');
     }
     try {
-      return await parseBoardingPassImage(imageBase64, mimeType, groqApiKey.value());
+      return await parseBoardingPassImage(imageBase64, mimeType, {
+        geminiApiKey: geminiApiKey.value(),
+        groqApiKey: groqApiKey.value(),
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not parse boarding pass';
       throw new HttpsError('failed-precondition', msg);

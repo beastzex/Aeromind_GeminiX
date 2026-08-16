@@ -82,7 +82,7 @@ export function BoardingPassIntel({ legs, isDemo, onScanNewPass }: BoardingPassI
           <p className="text-xs text-neutral-600 dark:text-neutral-400">
             {isDemo
               ? 'Demo trip preview — sign in and scan your own pass to replace this with real parsed data.'
-              : 'Parsed directly from your uploaded boarding pass image via Groq multimodal vision.'}
+              : 'Parsed directly from your uploaded boarding pass image via Gemini multimodal vision (Groq fallback).'}
           </p>
         </div>
 

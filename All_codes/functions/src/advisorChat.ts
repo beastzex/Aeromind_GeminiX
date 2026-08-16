@@ -4,6 +4,7 @@ import { calculateDisruptionScore } from './disruptionScore';
 import { searchRealFlights } from './flightSearch';
 import { getRealFlightStatus } from './flightStatus';
 import { DEMO_FLIGHT_CONTEXT, isDemoAccount } from './demoData';
+import { generateText, ProviderKeys } from './aiProviders';
 
 export interface AdvisorChatCitation {
   toolName: string;
@@ -17,8 +18,7 @@ export interface AdvisorChatResult {
   citations: AdvisorChatCitation[];
 }
 
-interface Keys {
-  groqApiKey?: string;
+interface Keys extends ProviderKeys {
   aviationStackKey?: string;
   openSkyClientId?: string;
   openSkyClientSecret?: string;
@@ -89,20 +89,16 @@ export async function processAdvisorChat(
     return table;
   };
 
-  if (keys.groqApiKey) {
-    try {
-      const Groq = (await import('groq-sdk')).default;
-      const client = new Groq({ apiKey: keys.groqApiKey });
+  if (keys.geminiApiKey || keys.groqApiKey) {
+    const tripContext = demo
+      ? `DEMO ACCOUNT ACTIVE TRIP: Flight ${DEMO_FLIGHT_CONTEXT.flightNo} (${DEMO_FLIGHT_CONTEXT.route}), Gate ${DEMO_FLIGHT_CONTEXT.gate}, Terminal ${DEMO_FLIGHT_CONTEXT.terminal}, Delay ${DEMO_FLIGHT_CONTEXT.delayMinutes}m.`
+      : userLegs.length > 0
+        ? `USER'S ACTUAL ITINERARY (${userLegs.length} legs):\n${userLegs
+            .map((l) => `- ${l.type.toUpperCase()}: ${l.title}${l.flightNo ? ` (${l.flightNo})` : ''} — ${l.status}`)
+            .join('\n')}\n${primaryFlightStatusLine}`
+        : `USER HAS NO ACTIVE TRIP LEGS YET. Do not invent a flight for them — invite them to scan a boarding pass or add a flight.`;
 
-      const tripContext = demo
-        ? `DEMO ACCOUNT ACTIVE TRIP: Flight ${DEMO_FLIGHT_CONTEXT.flightNo} (${DEMO_FLIGHT_CONTEXT.route}), Gate ${DEMO_FLIGHT_CONTEXT.gate}, Terminal ${DEMO_FLIGHT_CONTEXT.terminal}, Delay ${DEMO_FLIGHT_CONTEXT.delayMinutes}m.`
-        : userLegs.length > 0
-          ? `USER'S ACTUAL ITINERARY (${userLegs.length} legs):\n${userLegs
-              .map((l) => `- ${l.type.toUpperCase()}: ${l.title}${l.flightNo ? ` (${l.flightNo})` : ''} — ${l.status}`)
-              .join('\n')}\n${primaryFlightStatusLine}`
-          : `USER HAS NO ACTIVE TRIP LEGS YET. Do not invent a flight for them — invite them to scan a boarding pass or add a flight.`;
-
-      const systemPrompt = `You are AeroMind Real-Time General Flight & Travel AI Assistant.
+    const systemPrompt = `You are AeroMind Real-Time General Flight & Travel AI Assistant.
 Answer EVERY user query about flights, delay predictions, non-stop schedules, aircraft specs, gates, weather, and travel rebooking using ONLY the live data provided below. Never invent flight numbers, gates, or delay figures that are not present in this context.
 
 LIVE FLIGHT SEARCH RESULTS (${filterApplied}):
@@ -115,21 +111,15 @@ GUIDELINES:
 2. If no matching live data is available for what the user asked, say so plainly instead of fabricating it.
 3. Be professional, concise, reassuring, and articulate. Respond in GitHub Markdown.`;
 
-      const completion = await client.chat.completions.create({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message },
-        ],
-        model: 'openai/gpt-oss-120b',
-        temperature: 0.2,
+    const generated = await generateText(systemPrompt, message, keys);
+    if (generated) {
+      citations.push({
+        toolName: 'ai_model',
+        source: generated.provider === 'gemini' ? 'Gemini' : 'Groq (Gemini fallback)',
+        timestamp: nowStr,
+        data: { provider: generated.provider },
       });
-
-      const replyText = completion.choices[0]?.message?.content;
-      if (replyText) {
-        return { reply: replyText, citations };
-      }
-    } catch {
-      // Fall through to grounded template fallback below
+      return { reply: generated.text, citations };
     }
   }
 

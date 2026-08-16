@@ -1,3 +1,5 @@
+import { generateVisionText, ProviderKeys } from './aiProviders';
+
 export interface ParsedBoardingPass {
   flightNo: string;
   carrier: string;
@@ -16,35 +18,14 @@ const EXTRACTION_PROMPT = `You are a boarding pass OCR extraction engine. Read t
 {"flightNo": string, "carrier": string, "origin": string, "destination": string, "dep": string, "arr": string, "gate": string|null, "terminal": string|null, "seat": string|null, "pnr": string|null, "aircraft": string|null}
 "origin" and "destination" should be full "City (IATA)" strings if visible, e.g. "Delhi (DEL)". "dep" and "arr" are the departure/arrival times as printed. If a field truly isn't visible on the pass, use null for it — never invent a value. If this image is not a boarding pass at all, return {"error": "not_a_boarding_pass"}.`;
 
-// Confirmed against Groq's vision-model docs at implementation time — qwen/qwen3.6-27b
-// is the currently supported multimodal (text+image) model on this account.
-const VISION_MODEL = 'qwen/qwen3.6-27b';
-
 export async function parseBoardingPassImage(
   imageBase64: string,
   mimeType: string,
-  groqApiKey: string
+  keys: ProviderKeys
 ): Promise<ParsedBoardingPass> {
-  const Groq = (await import('groq-sdk')).default;
-  const client = new Groq({ apiKey: groqApiKey });
-
-  const completion = await client.chat.completions.create({
-    model: VISION_MODEL,
-    temperature: 0,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: EXTRACTION_PROMPT },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
-        ] as any,
-      },
-    ],
-  });
-
-  const raw = completion.choices[0]?.message?.content?.trim();
+  const raw = (await generateVisionText(EXTRACTION_PROMPT, imageBase64, mimeType, keys))?.trim();
   if (!raw) {
-    throw new Error('Vision model returned no content');
+    throw new Error('No vision model available or it returned no content');
   }
 
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
