@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Every user's trip data lives under users/{uid}/... — only that
+    // user (or the Admin SDK from Cloud Functions, which bypasses rules)
+    // may read or write it.
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

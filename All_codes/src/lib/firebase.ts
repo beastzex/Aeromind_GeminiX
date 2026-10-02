@@ -1,11 +1,23 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+
+const env = typeof process !== 'undefined' && process.env ? process.env : {};
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'aeromind-demo',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:123456789:web:demo',
+  apiKey: env.NEXT_PUBLIC_FIREBASE_API_KEY || env.VITE_FIREBASE_API_KEY || '',
+  authDomain: env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: env.NEXT_PUBLIC_FIREBASE_APP_ID || env.VITE_FIREBASE_APP_ID || '',
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Firebase is used for Auth and Firestore only. Everything that needs a secret
+// API key (Gemini, Groq, AviationStack, OpenSky) goes through the native
+// backend in server/ — see src/lib/apiClient.ts.
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+

@@ -10,12 +10,23 @@ build/
 out/
 
 # Local Environment Files (Secrets & Keys)
+.secret.local
+functions/.secret.local
 .env
 .env.local
 .env*.local
 .env.development.local
 .env.test.local
 .env.production.local
+assets/credentials.json
+
+# Firebase service account private keys — never commit
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Native backend
+server/.env
+server/dist/
 
 # Logs
 logs/
@@ -45,3 +56,12 @@ Thumbs.db
 next-env.d.ts
 .cache/
 .vite/
+
+# Firebase local state
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Local scratch docs (not part of shipped documentation)
+VOICE_TESTING.md

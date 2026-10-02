@@ -24,9 +24,6 @@ export function AirplaneWindowHero() {
       className="relative min-h-screen bg-white dark:bg-black text-black dark:text-white pt-28 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden transition-colors duration-300"
     >
 
-      {/* Background Micro Grid Pattern */}
-      <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]" />
-
       <div className="relative z-10 max-w-6xl mx-auto flex flex-col items-center">
         {/* Top Header & Tagline */}
         <motion.div

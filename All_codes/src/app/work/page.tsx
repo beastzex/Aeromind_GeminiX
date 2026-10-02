@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { DigitalTwinGraph } from '@/components/DigitalTwinGraph';
 import { ScannerModal } from '@/components/ScannerModal';
@@ -10,9 +10,10 @@ import { WhisperAlert } from '@/components/WhisperAlert';
 import { LiveFlightTracker } from '@/components/LiveFlightTracker';
 import { BoardingPassIntel } from '@/components/BoardingPassIntel';
 import { AIChatDrawer } from '@/components/AIChatDrawer';
-import { TripStore } from '@/lib/tripStore';
-import { Leg, RebookingProposal } from '@/types';
+import { TripStore, isDemo } from '@/lib/tripStore';
+import { Leg, RebookingProposal, Trip } from '@/types';
 import { simulateDisruptionApi } from '@/services/api';
+import { subscribeVoiceAction, VoiceAction } from '@/lib/voiceNav/actionBus';
 import {
   AlertCircle,
   Camera,
@@ -39,10 +40,22 @@ import { Link } from 'react-router-dom';
 
 type TabType = 'itinerary' | 'tracker' | 'pass' | 'disruption' | 'wayfinding' | 'tester';
 
+// AR Wayfinding is a modal (isAROpen), not one of the visible tab buttons —
+// excluded from the cycle order used by "next tab" / "previous tab" voice commands.
+const VISIBLE_TAB_ORDER: TabType[] = ['itinerary', 'tracker', 'pass', 'disruption', 'tester'];
+
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+
 export default function WorkPage() {
   const [legs, setLegs] = useState<Leg[]>([]);
   const [impactedLegIds, setImpactedLegIds] = useState<string[]>([]);
   const [proposal, setProposal] = useState<RebookingProposal | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [trip, setTrip] = useState<Trip | null>(null);
+
+  const who = currentUser ? { uid: currentUser.uid, email: currentUser.email } : null;
+  const isDemoUser = isDemo(who);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('itinerary');
@@ -56,48 +69,107 @@ export default function WorkPage() {
   const [whisperAlertMsg, setWhisperAlertMsg] = useState<string | null>(null);
   const [activeFeatureTest, setActiveFeatureTest] = useState<string | null>(null);
 
-  const loadTripData = () => {
-    const fetchedLegs = TripStore.getLegs();
+  const loadTripData = async (identity?: { uid: string; email?: string | null } | null) => {
+    const [fetchedLegs, activeProp, fetchedTrip] = await Promise.all([
+      TripStore.getLegs(identity),
+      TripStore.getLatestProposal(identity),
+      TripStore.getTrip(identity),
+    ]);
     setLegs(fetchedLegs);
-    const activeProp = TripStore.getLatestProposal();
     setProposal(activeProp);
+    setTrip(fetchedTrip);
   };
 
   useEffect(() => {
-    loadTripData();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      loadTripData(user ? { uid: user.uid, email: user.email } : null);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleSimulateDisruption = async () => {
     try {
-      const data = await simulateDisruptionApi();
+      const data = await simulateDisruptionApi(who);
 
       if (data.success) {
-        setImpactedLegIds(data.impactedLegIds || ['leg_hotel_hyatt', 'leg_car_hertz']);
-        loadTripData();
+        setImpactedLegIds(data.impactedLegIds || []);
+        await loadTripData(who);
 
         setWhisperAlertMsg(
-          'Gate changed to B22 — Flight AI302 running 85m late due to ATC hold. Consolidated rebooking proposal ready.'
+          data.proposalCreated
+            ? `Flight ${data.flightNo || ''} disruption risk elevated to ${data.disruptionScore}/100. Consolidated rebooking proposal ready.`
+            : `Flight ${data.flightNo || ''} disruption risk is now ${data.disruptionScore}/100 — still within acceptable range.`
         );
 
-        setTimeout(() => {
-          setIsRebookingOpen(true);
-        }, 1200);
+        if (data.proposalCreated) {
+          setTimeout(() => {
+            setIsRebookingOpen(true);
+          }, 1200);
+        }
+      } else {
+        setWhisperAlertMsg(data.message || 'No active flight leg to simulate a disruption for.');
       }
     } catch {
-      setImpactedLegIds(['leg_hotel_hyatt', 'leg_car_hertz']);
-      setIsRebookingOpen(true);
+      setWhisperAlertMsg('Could not run the disruption simulation right now.');
     }
   };
 
+  // Subscribing fresh on every render (e.g. depending on handleSimulateDisruption,
+  // which is a new function each render) opens a window with zero listeners
+  // between unsubscribe and resubscribe — long enough for a queued voice
+  // command to land while nothing's listening. A ref keeps the handler body
+  // current without ever tearing down and recreating the subscription itself.
+  const voiceActionHandlerRef = useRef<(action: VoiceAction) => void>(() => {});
+  voiceActionHandlerRef.current = (action) => {
+    switch (action.type) {
+      case 'openScanner':
+        setIsScannerOpen(true);
+        break;
+      case 'setTab':
+        setActiveTab(action.tab);
+        break;
+      case 'cycleTab':
+        setActiveTab((current) => {
+          const currentIndex = VISIBLE_TAB_ORDER.indexOf(current);
+          const delta = action.direction === 'next' ? 1 : -1;
+          const nextIndex = (currentIndex + delta + VISIBLE_TAB_ORDER.length) % VISIBLE_TAB_ORDER.length;
+          return VISIBLE_TAB_ORDER[nextIndex];
+        });
+        break;
+      case 'simulateDisruption':
+        handleSimulateDisruption();
+        break;
+      case 'openArCompass':
+        setIsAROpen(true);
+        break;
+      case 'openAiChat':
+        setIsAIChatOpen(true);
+        break;
+      case 'closeOverlay':
+        setIsScannerOpen(false);
+        setIsRebookingOpen(false);
+        setIsAROpen(false);
+        setIsAIChatOpen(false);
+        setWhisperAlertMsg(null);
+        break;
+    }
+  };
+
+  useEffect(() => {
+    return subscribeVoiceAction((action) => voiceActionHandlerRef.current(action));
+  }, []);
+
   const handleScanSuccess = (newLeg: Leg) => {
-    loadTripData();
+    loadTripData(who);
     setWhisperAlertMsg(`New boarding pass added: ${newLeg.title}. Digital-Twin itinerary graph updated.`);
   };
 
-  const handleApproveRebookingSuccess = () => {
-    loadTripData();
+  const handleApproveRebookingSuccess = (chosenFlightNo: string) => {
+    loadTripData(who);
     setImpactedLegIds([]);
-    setWhisperAlertMsg('Rebooking executed! Flight AI302 replaced with UA868. Hotel and Car shift completed.');
+    setWhisperAlertMsg(`Rebooking executed! Replaced with flight ${chosenFlightNo}. Downstream legs updated.`);
   };
 
   const flightLeg = legs.find((l) => l.type === 'flight');
@@ -212,21 +284,31 @@ export default function WorkPage() {
         <div className="p-6 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-black dark:bg-white animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs uppercase tracking-widest font-semibold text-neutral-600 dark:text-neutral-300">
-                AeroMind Physical AI Travel Environment
+                {currentUser ? `Active Session: ${currentUser.email}` : 'Demo Workspace (Pre-loaded Itinerary)'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-semibold text-black dark:text-white tracking-tight">
-              SF Tech & AI Summit 2026
+              {trip?.title || 'My Travel Itinerary'}
             </h1>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
-              Live Multimodal Background Telemetry Active · Flight AI302 (DEL ➔ SFO)
+              {flightLeg
+                ? `Live Multimodal Telemetry Active · Flight ${flightLeg.flightNo || ''} (${flightLeg.title})`
+                : 'No active flight leg yet — scan a boarding pass to activate live telemetry.'}
             </p>
           </div>
 
           {/* Action Toolbar */}
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setIsScannerOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-black/10 dark:border-white/15 text-xs font-semibold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              title="Scan or add your own custom flight / boarding pass"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Scan My Pass</span>
+            </button>
             <button
               onClick={handleSimulateDisruption}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-semibold shadow-md hover:scale-105 transition-all"
@@ -246,7 +328,7 @@ export default function WorkPage() {
             </button>
 
             <Link
-              to="/journal/trip_sfo_2026"
+              to={`/journal/${trip?.id || 'trip_sfo_2026'}`}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-black/10 dark:border-white/15 text-xs font-semibold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
               <BookOpen className="w-4 h-4" />
@@ -350,11 +432,13 @@ export default function WorkPage() {
                   Stateful Digital-Twin Itinerary Graph
                 </h2>
                 <p className="text-xs text-neutral-500">
-                  Click any travel node (Flight ➔ Hotel ➔ Car) to inspect state dependencies.
+                  {legs.length > 0
+                    ? 'Click any travel node (Flight ➔ Hotel ➔ Car) to inspect state dependencies.'
+                    : 'Your active account is ready. Scan a boarding pass or add a flight to build your live graph.'}
                 </p>
               </div>
               <button
-                onClick={loadTripData}
+                onClick={() => loadTripData(who)}
                 className="flex items-center gap-1.5 text-xs font-medium text-black dark:text-white hover:underline"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -362,25 +446,59 @@ export default function WorkPage() {
               </button>
             </div>
 
-            <DigitalTwinGraph
-              legs={legs}
-              impactedLegIds={impactedLegIds}
-              onSelectLeg={() => setIsRebookingOpen(true)}
-            />
+            {legs.length === 0 ? (
+              <div className="p-10 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center mx-auto text-xl">
+                  <GitBranch className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold font-manrope text-black dark:text-white">
+                    No Active Trips Found
+                  </h3>
+                  <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                    Your production account ({currentUser?.email || 'Logged In User'}) currently has no active flights. Scan a boarding pass or add a flight to initialize your real-time itinerary graph.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsScannerOpen(true)}
+                  className="px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold text-xs shadow-md hover:scale-105 transition-all inline-flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Scan Your First Boarding Pass</span>
+                </button>
+              </div>
+            ) : (
+              <DigitalTwinGraph
+                legs={legs}
+                impactedLegIds={impactedLegIds}
+                onSelectLeg={() => setIsRebookingOpen(true)}
+              />
+            )}
           </section>
         )}
 
         {/* Tab Content 2: Live Flight Tracker */}
         {activeTab === 'tracker' && (
-          <LiveFlightTracker
-            flightNo={flightLeg?.flightNo || 'AI302'}
-            onTriggerDisruption={handleSimulateDisruption}
-          />
+          flightLeg?.flightNo || isDemoUser ? (
+            <LiveFlightTracker
+              flightNo={flightLeg?.flightNo || 'AI302'}
+              onTriggerDisruption={handleSimulateDisruption}
+            />
+          ) : (
+            <div className="p-10 rounded-2xl border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 text-center space-y-2">
+              <h3 className="text-lg font-semibold text-black dark:text-white">No Active Flight to Track</h3>
+              <p className="text-xs text-neutral-500">Scan a boarding pass to start live tracking.</p>
+            </div>
+          )
         )}
 
         {/* Tab Content 3: Boarding Pass Manifest Intel */}
         {activeTab === 'pass' && (
-          <BoardingPassIntel onScanNewPass={() => setIsScannerOpen(true)} />
+          <BoardingPassIntel
+            legs={legs}
+            isDemo={isDemoUser}
+            onScanNewPass={() => setIsScannerOpen(true)}
+          />
         )}
 
         {/* Tab Content 4: Disruption Solver */}
@@ -399,7 +517,7 @@ export default function WorkPage() {
                   onClick={handleSimulateDisruption}
                   className="px-5 py-2.5 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-semibold shadow-md hover:scale-105 transition-all"
                 >
-                  Trigger Live Delay Simulation (AI302)
+                  Trigger Live Delay Simulation{flightLeg?.flightNo ? ` (${flightLeg.flightNo})` : ''}
                 </button>
                 <button
                   onClick={() => setIsRebookingOpen(true)}
@@ -497,6 +615,7 @@ export default function WorkPage() {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onScanSuccess={handleScanSuccess}
+        who={who}
       />
 
       <RebookingModal
@@ -504,12 +623,13 @@ export default function WorkPage() {
         proposal={proposal}
         onClose={() => setIsRebookingOpen(false)}
         onApproveSuccess={handleApproveRebookingSuccess}
+        who={who}
       />
 
       <ARWayfinding
         isOpen={isAROpen}
         onClose={() => setIsAROpen(false)}
-        targetGate={flightLeg?.details?.gate || 'B22'}
+        targetGate={flightLeg?.details?.gate || (isDemoUser ? 'B22' : 'Not Assigned')}
         walkingEtaMinutes={8}
         minutesToBoarding={12}
       />

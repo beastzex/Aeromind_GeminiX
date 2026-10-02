@@ -110,5 +110,26 @@ export interface FlightCacheEntry {
   gate?: string;
   terminal?: string;
   fetchedAt: number;
-  source: 'live' | 'mock';
+  source: 'live' | 'mock' | 'unavailable';
+}
+
+export interface FlightSearchResult {
+  flightNo: string;
+  carrier: string;
+  origin: string;
+  originName: string;
+  destination: string;
+  destinationName: string;
+  depTime: string;
+  arrTime: string;
+  depHour: number;
+  type: 'Direct Non-Stop' | '1-Stop Connecting';
+  aircraft: string;
+  gate: string;
+  terminal: string;
+  delayRiskPercent: number;
+  delayRiskLevel: 'Low' | 'Moderate' | 'High';
+  delayReason: string;
+  duration: string;
+  onTimeRate: string;
 }
