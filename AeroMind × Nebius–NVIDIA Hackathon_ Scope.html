@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AeroMind × Nebius–NVIDIA Hackathon: Master Blueprint & Scope</title>
+  <style>
+    :root {
+      box-sizing: border-box;
+      color-scheme: light dark;
+      --bg: #0a0a0a;
+      --text: #ededed;
+      --muted: #a1a1aa;
+      --card-bg: #141416;
+      --border: rgba(255, 255, 255, 0.12);
+      --border-accent: rgba(255, 255, 255, 0.28);
+      --code-bg: #1c1c1f;
+      --badge-bg: #222226;
+      --accent: #ffffff;
+      --link: #60a5fa;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --blue: #38bdf8;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --text: #18181b;
+        --muted: #71717a;
+        --card-bg: #f8fafc;
+        --border: rgba(0, 0, 0, 0.1);
+        --border-accent: rgba(0, 0, 0, 0.25);
+        --code-bg: #f1f5f9;
+        --badge-bg: #e2e8f0;
+        --accent: #000000;
+        --link: #2563eb;
+      }
+    }
+    * { box-sizing: inherit; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      font: 14.5px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      letter-spacing: -0.01em;
+    }
+    h1, h2, h3, h4 {
+      color: var(--text);
+      font-weight: 700;
+      margin: 28px 0 12px;
+      letter-spacing: -0.025em;
+    }
+    h1 { font-size: 2.1rem; line-height: 1.2; margin-top: 0; }
+    h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 36px; }
+    h3 { font-size: 1.15rem; margin-top: 20px; }
+    p, ul, ol, blockquote { margin: 0 0 14px; }
+    ul, ol { padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    blockquote {
+      border-left: 3px solid var(--border-accent);
+      padding: 10px 16px;
+      background: var(--card-bg);
+      border-radius: 0 8px 8px 0;
+      color: var(--muted);
+      font-style: italic;
+    }
+    strong { color: var(--text); font-weight: 600; }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12.5px;
+    }
+    :not(pre) > code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    pre {
+      background: var(--code-bg);
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      line-height: 1.5;
+      margin: 12px 0 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 24px;
+      font-size: 13.5px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--card-bg);
+      font-weight: 600;
+    }
+    td { background: var(--bg); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--badge-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .badge-nvidia { background: #1a3311; color: #86efac; border-color: #22c55e44; }
+    .badge-tavily { background: #172554; color: #93c5fd; border-color: #3b82f644; }
+    .badge-nebius { background: #3b0764; color: #d8b4fe; border-color: #a855f744; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AeroMind × Nebius–NVIDIA Hackathon: Master Blueprint</h1>
+  <p>
+    <strong>Product:</strong> AeroMind — Autonomous Physical AI Travel Concierge<br>
+    <strong>Hackathon:</strong> Nebius × NVIDIA Global AI Hackathon (Devpost)<br>
+    <strong>Target Track:</strong> Best Apps and Agents<br>
+    <strong>Special Target ($3,000 Bonus):</strong> Best Use of Tavily API (Runtime Disruption Intelligence)<br>
+    <strong>Deadline:</strong> Oct 30, 2026, 10:00 AM PDT (10:30 PM IST)
+  </p>
+
+  <blockquote>
+    "Scan the trip ➔ monitor it autonomously ➔ predict disruption (Tavily + OpenSky) ➔ propose a unified whole-day fix (Flight + Hotel + Car) ➔ generate EU261 compensation claims ➔ translate for gate agents ➔ execute only on human approval."
+  </blockquote>
+
+  <hr>
+
+  <h2>1. Hackathon Requirements & Mandatory Compliance</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Requirement</th>
+        <th>AeroMind Implementation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>Runs on Nebius Token Factory or AI Cloud</strong></td>
+        <td>All LLM reasoning, chat, tool calling, and planning route to Nebius Token Factory (<code>https://api.tokenfactory.us-central1.nebius.com/v1/</code>).</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Uses at least one NVIDIA Open-Source Model</strong></td>
+        <td><strong>NVIDIA Nemotron family</strong>: <code>nvidia/Nemotron-3-Ultra-550b-a55b</code> (complex multi-leg planning & legal claims) + <code>nvidia/nemotron-3-super-120b-a12b</code> (real-time chat, tool orchestration & extraction).</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Tavily Bonus Prize ($3,000)</strong></td>
+        <td>Functional runtime integration of <strong>Tavily Search API</strong> to detect live airport ground stops, strikes, and weather emergencies hours before airlines publish status updates.</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Public Repo & License</strong></td>
+        <td>Public GitHub repository with standard <strong>MIT License</strong>.</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>No Legacy Competition References</strong></td>
+        <td><strong>Complete purge</strong> of Google, Gemini, and Gemini X Prize references from UI, code, environment variables, documentation, and metadata.</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>Background Monitoring</strong></td>
+        <td><strong>Nebius Serverless Job</strong> script running periodic trip monitoring and disruption evaluation.</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>Deliverables</strong></td>
+        <td>Public Web App + React Native Expo Mobile App + 3-min YouTube demo video + "What Changed" narrative.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>2. Do We Need to Train a Custom Model?</h2>
+  <div class="card">
+    <div class="card-title">❌ NO — Absolutely Do Not Train a Custom Model</div>
+    <p>
+      In the <strong>Best Apps and Agents</strong> track, training a model from scratch is counterproductive and discouraged:
+    </p>
+    <ul>
+      <li><strong>NVIDIA Nemotron is Already World-Class:</strong> The Nemotron-3 models on Nebius Token Factory are massive foundation models trained on trillions of tokens with extraordinary reasoning, IATA aviation awareness, legal reasoning (EU261), and function-calling capabilities.</li>
+      <li><strong>Judging Focus:</strong> The judges evaluate <em>Technological Implementation, Design, Potential Impact, and Idea Quality</em>. They want to see agentic architectures, dynamic tool use, multi-modal physical grounding, and reliable user experience.</li>
+      <li><strong>What We Build Instead:</strong> High-precision <strong>Agentic Prompt Engineering</strong>, dynamic <strong>JSON Schemas</strong>, <strong>Zod validators</strong>, and <strong>Tool Calling</strong> on top of Nebius Token Factory.</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>3. The 4 Differentiating Killer Features</h2>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">
+        <span class="badge badge-tavily">Feature 1</span>
+        Tavily Live Airport Threat Radar
+      </div>
+      <p><strong>The Problem:</strong> Airline APIs update delays 2–3 hours too late. Local strikes, security checkpoints, and FAA ground stops break out on news first.</p>
+      <p><strong>The Solution:</strong> Backend calls <code>api.tavily.com/search</code> with targeted airport risk queries. Real-time news tickers alert travelers to strikes and ground stops, directly feeding a <code>tavilyNewsRisk</code> metric into our Disruption Score formula. <em>(Directly clinches the $3,000 Tavily prize).</em></p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="badge badge-nvidia">Feature 2</span>
+        EU261 / US DOT Cash Claim Generator
+      </div>
+      <p><strong>The Problem:</strong> When flights are delayed &gt;3h or canceled, airlines owe passengers €250–€600 / $650 by law, but 85% never claim it due to confusing forms.</p>
+      <p><strong>The Solution:</strong> When delay exceeds 180m, Nemotron analyzes the route, carrier, and reason, evaluates legal eligibility, and generates an ironclad, formal legal claim letter ready to copy or download as a PDF.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="badge badge-nebius">Feature 3</span>
+        Multilingual Desk Agent Flashcards
+      </div>
+      <p><strong>The Problem:</strong> Stranded at midnight in Tokyo Haneda or Paris CDG, deafening noise and language barriers make rebooking at the counter a nightmare.</p>
+      <p><strong>The Solution:</strong> 1-tap "Show to Desk Agent" high-contrast flashcard in Japanese, German, French, Spanish, or Hindi invoking IATA Resolution 735d with PNR, accompanied by Deepgram audio pronunciation.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="badge">Feature 4</span>
+        Digital-Twin Hotel &amp; Car Ripple Re-plan
+      </div>
+      <p><strong>The Problem:</strong> Rebooking a flight is useless if your rental car desk closes at midnight and your hotel charges you as a "no-show".</p>
+      <p><strong>The Solution:</strong> Approving a flight re-plan simultaneously generates a hotel late check-in dispatch email (via Resend) and auto-extends the car rental pickup grace period in one atomic approval.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>4. Target Architecture &amp; Data Flow</h2>
+  <pre><code>┌────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                              │
+│   • Web App: React 18 + Vite + Tailwind + Framer Motion (apps/web/)    │
+│   • Mobile App: React Native Expo + TypeScript (apps/mobile/)          │
+│   • Audio Pipeline: Deepgram Nova-2 (STT) + Deepgram Aura (TTS)        │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP / REST / JSON
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                     BACKEND SERVER (server/)                           │
+│   • Express / TypeScript on Node.js                                    │
+│   • OpenAI SDK pointed to Nebius Token Factory                         │
+│                                                                        │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │           CORE BRAIN: Nebius Token Factory (NVIDIA)            │   │
+│   │   • nvidia/Nemotron-3-Ultra-550b (Complex Multi-Leg Planning)  │   │
+│   │   • nvidia/nemotron-3-super-120b (Real-Time Advisor &amp; OCR)     │   │
+│   │   • Tool Calling &amp; Function Schemas                            │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+│                                                                        │
+│   ┌──────────────────────── EXTERNAL TOOLS ────────────────────────┐   │
+│   │ • Tavily Search API: Breaking airport disruption intelligence  │   │
+│   │ • OpenSky Network: ADS-B transponder altitude &amp; velocity data   │   │
+│   │ • AviationStack: Global airline routes, schedules, &amp; gates     │   │
+│   │ • OpenWeatherMap: Runway visibility, wind shear, storms        │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+└───────────────────────────┬────────────────────────────┬───────────────┘
+                            │                            │
+                            ▼                            ▼
+┌──────────────────────────────────────────────┐ ┌───────────────────────┐
+│              FIRESTORE DATABASE              │ │ NEBIUS SERVERLESS JOB │
+│   Digital-Twin Graph: users/{uid}/trips/     │ │ Periodic background   │
+│   legs (dependsOn edges: flight ➔ hotel ➔ car)│ │ itinerary watchdog   │
+│   proposals, flightCache, audit events       │ │ (nebiusWatchdogJob.ts)│
+└──────────────────────────────────────────────┘ └───────────────────────┘</code></pre>
+
+  <hr>
+
+  <h2>5. Scope Comparison: Previous vs Hackathon Version</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Domain</th>
+        <th>Previous Version (Gemini X Prize)</th>
+        <th>New Version (Nebius × NVIDIA Hackathon)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Primary LLM</strong></td>
+        <td>Google Gemini (Groq fallback)</td>
+        <td><strong>NVIDIA Nemotron on Nebius Token Factory</strong> (<code>Nemotron-3-Ultra</code> for planning, <code>nemotron-3-super-120b</code> for advisor).</td>
+      </tr>
+      <tr>
+        <td><strong>External News &amp; Risk</strong></td>
+        <td>None (pure telemetry delays)</td>
+        <td><strong>Tavily Search API</strong>: Live airport ground stop &amp; strike detector <em>($3,000 prize target)</em>.</td>
+      </tr>
+      <tr>
+        <td><strong>Voice Engine</strong></td>
+        <td>Gemini Live + Deepgram WebSocket prototypes</td>
+        <td><strong>Deepgram Multilingual Agent</strong> (Nova-2 STT + Aura TTS) backed by Nemotron reasoning.</td>
+      </tr>
+      <tr>
+        <td><strong>Passenger Rights</strong></td>
+        <td>None</td>
+        <td><strong>EU261 / US DOT Cash Compensation Engine</strong> with automated claim letters.</td>
+      </tr>
+      <tr>
+        <td><strong>International Grounding</strong></td>
+        <td>English-only UI</td>
+        <td><strong>"Show to Desk Agent" Multilingual Emergency Flashcards</strong> (JA, DE, FR, ES, HI).</td>
+      </tr>
+      <tr>
+        <td><strong>Downstream Impact</strong></td>
+        <td>Flight rebooking only</td>
+        <td><strong>Digital-Twin Whole-Day Ripple Rebooking</strong> (Flight + Hotel + Rental Car).</td>
+      </tr>
+      <tr>
+        <td><strong>Background Monitoring</strong></td>
+        <td>Planned / Unimplemented</td>
+        <td><strong>Nebius Serverless Job</strong> script running automated trip checks.</td>
+      </tr>
+      <tr>
+        <td><strong>Client Targets</strong></td>
+        <td>Web App only</td>
+        <td><strong>Web App</strong> (Vite) + <strong>Mobile App</strong> (React Native Expo).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>6. Conflict-Free Repository Monorepo Structure</h2>
+  <p>To ensure all 4 team members can push to <code>main</code> without Git merge conflicts, the codebase is partitioned into 4 distinct workspaces:</p>
+  <pre><code>geminixprize/
+├── apps/
+│   ├── web/                 <-- [Friend 3: Web App UI &amp; Client Integration]
+│   │   ├── src/
+│   │   ├── public/
+│   │   └── package.json
+│   │
+│   └── mobile/              <-- [Friend 1: React Native Expo Mobile App]
+│       ├── app/
+│       ├── src/
+│       └── package.json
+│
+├── server/                  <-- [Friend 2: Backend API, Nebius Adapter, Tavily, Jobs]
+│   ├── src/
+│   │   ├── lib/             (nebiusClient.ts, tavilySearch.ts, deepgramVoice.ts...)
+│   │   ├── jobs/            (nebiusWatchdogJob.ts)
+│   │   └── index.ts
+│   ├── .env.example
+│   └── package.json
+│
+├── ai_engine/               <-- [Friend 4: Nemotron Prompts, Tools &amp; Structured Schemas]
+│   ├── prompts/             (advisorPrompt, eu261Prompt, flashcardPrompt...)
+│   ├── schemas/             (toolDeclarations.ts, zods.ts)
+│   └── index.ts
+│
+├── docs/                    <-- [Shared Docs, Architecture, README, Submission Text]
+├── LICENSE                  <-- MIT License
+└── AeroMind × Nebius–NVIDIA Hackathon_ Scope.html</code></pre>
+
+  <hr>
+
+  <h2>7. Team Allocation &amp; Core Deliverables (4 Engineers)</h2>
+
+  <div class="card">
+    <div class="card-title">📱 Friend 1: Mobile App Engineer (apps/mobile/)</div>
+    <ul>
+      <li>Initialize React Native Expo TypeScript app with Expo Router.</li>
+      <li>Create 4 primary views: Dashboard (Trip Graph), Live Flight &amp; Tavily Radar, Advisor Chat, and Emergency Tools.</li>
+      <li>Implement the "Show to Desk Agent" full-screen flashcard with <code>expo-speech</code> native audio output.</li>
+      <li>Implement EU261 Compensation Claim viewer with one-tap copy and PDF share.</li>
+      <li>Boarding pass camera capture sending base64 images to <code>/api/boarding-pass/parse</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ Friend 2: Backend &amp; Cloud Engineer (server/)</div>
+    <ul>
+      <li>Replace Google GenAI with OpenAI SDK configured for <strong>Nebius Token Factory</strong>.</li>
+      <li>Implement <code>server/src/lib/tavilySearch.ts</code> calling Tavily API for airport disruption news.</li>
+      <li>Update Disruption Score formula: <code>0.35·ATC + 0.25·Weather + 0.20·Delay + 0.10·OTP + 0.10·TavilyRisk</code>.</li>
+      <li>Create standalone <strong>Nebius Serverless Job</strong> (<code>server/src/jobs/nebiusWatchdogJob.ts</code>) to poll active trips.</li>
+      <li>Expose Express routes: <code>/api/advisor-chat</code>, <code>/api/tavily/radar</code>, <code>/api/claims/eu261</code>, <code>/api/agent/flashcard</code>, <code>/api/voice/token</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎨 Friend 3: Web App UI &amp; Purge Lead (apps/web/)</div>
+    <ul>
+      <li><strong>Complete Purge:</strong> Wipe out all references to Google, Gemini, and Groq across the UI, components, and meta tags.</li>
+      <li>Update branding badges to <strong>NVIDIA Nemotron</strong> and <strong>Nebius Token Factory</strong>.</li>
+      <li>Build <code>TavilyRadarWidget.tsx</code> for live breaking airport news tickers.</li>
+      <li>Build <code>CompensationClaimModal.tsx</code> for displaying EU261 / US DOT cash refund letters.</li>
+      <li>Build <code>DeskAgentFlashcardModal.tsx</code> with multilingual toggle and audio playback.</li>
+      <li>Enhance <code>RebookingModal.tsx</code> to display whole-day ripple rebooking (Flight + Hotel + Car).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧠 Friend 4: AI Engine &amp; Prompt Lead (ai_engine/)</div>
+    <ul>
+      <li>Craft the <strong>AeroMind Nemotron System Prompt</strong> with strict grounding rules (citations + timestamps).</li>
+      <li>Define OpenAI-compatible function calling schemas in <code>toolDeclarations.ts</code> (flight status, alternative search, Tavily news, rebooking).</li>
+      <li>Build the <strong>EU261 / US DOT Claim Prompt</strong> returning structured JSON (eligibility, statutory basis, formal legal letter).</li>
+      <li>Build the <strong>Multilingual Desk Agent Prompt</strong> generating high-contrast counter notices in JA, DE, FR, ES, HI.</li>
+      <li>Build the <strong>Disruption Score Synthesizer</strong> generating calm, 2-sentence human explanations of the risk score.</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <h2>8. Phased Execution Schedule</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th>
+        <th>Focus Area</th>
+        <th>Key Milestones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1 (Oct 3 – Oct 8)</strong></td>
+        <td>Migration &amp; Purge</td>
+        <td>Remove Google/Gemini from UI &amp; backend; hook up Nebius Token Factory client; initialize mobile Expo project.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2 (Oct 9 – Oct 15)</strong></td>
+        <td>Intelligence &amp; Tavily</td>
+        <td>Integrate Tavily Search API; build EU261 Claim &amp; Desk Agent generators; integrate Deepgram voice tokens.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3 (Oct 16 – Oct 22)</strong></td>
+        <td>UI &amp; Mobile Completion</td>
+        <td>Embed Tavily Radar card; wire Desk Agent flashcards &amp; claim modals on both Web and Mobile; test ripple rebooking.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 4 (Oct 23 – Oct 27)</strong></td>
+        <td>Nebius Serverless Job &amp; Deployment</td>
+        <td>Deploy backend &amp; web app with public URL; verify Nebius Serverless Job watchdog; write README &amp; add MIT license.</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 5 (Oct 28 – Oct 30)</strong></td>
+        <td>Submission Assets</td>
+        <td>Record 3-minute YouTube walkthrough demo; write "What Changed" narrative; submit Devpost entry.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>9. Definition of Done (Submission Checklist)</h2>
+  <ul>
+    <li><input type="checkbox"> Zero occurrences of "Gemini", "Google", or "Groq" remain in the project.</li>
+    <li><input type="checkbox"> Every LLM call hits <strong>Nebius Token Factory</strong> running <strong>NVIDIA Nemotron</strong> models.</li>
+    <li><input type="checkbox"> Live functional call to <strong>Tavily Search API</strong> powers the disruption radar widget ($3,000 prize).</li>
+    <li><input type="checkbox"> End-to-end demo flow works: Scan pass ➔ Tavily/OpenSky risk ➔ Nemotron explanation ➔ EU261 claim ➔ Desk Agent card ➔ 1-tap rebooking.</li>
+    <li><input type="checkbox"> React Native Mobile App runs and communicates with the backend.</li>
+    <li><input type="checkbox"> Nebius Serverless Job watchdog script polls active trips and updates Firestore.</li>
+    <li><input type="checkbox"> Public GitHub repo with an <strong>MIT License</strong> and updated README highlighting Nemotron &amp; Token Factory.</li>
+    <li><input type="checkbox"> Public YouTube demo video under 3 minutes with no copyrighted audio or third-party trademarks.</li>
+  </ul>
+
+</body>
+</html>
